@@ -3,6 +3,7 @@ Festival Simulator - Main Flask Application
 """
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit
 from models import db, Festival, Artist, Vendor
 from game_systems.game_coordinator import GameCoordinator
 import json
@@ -12,8 +13,10 @@ import os
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///festival_sim.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'your-secret-key-here'
 
 db.init_app(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Initialize game coordinator
 game_coordinator = GameCoordinator()
@@ -63,11 +66,62 @@ def dashboard(festival_id):
 @app.route('/api/festival/<int:festival_id>')
 def get_festival_data(festival_id):
     """Get comprehensive festival data"""
-    summary = game_coordinator.get_festival_summary(festival_id)
-    if not summary:
-        return jsonify({'error': 'Festival not found'}), 404
+    festival = Festival.query.get_or_404(festival_id)
+    artists = Artist.query.filter_by(festival_id=festival_id).all()
+    vendors = Vendor.query.filter_by(festival_id=festival_id).all()
     
-    return jsonify(summary)
+    # Convert to the structure expected by frontend
+    festival_data = {
+        'festival': {
+            'id': festival.id,
+            'name': festival.name,
+            'days_remaining': festival.days_remaining,
+            'budget': festival.budget,
+            'current_budget': festival.budget,  # Add this for frontend compatibility
+            'reputation': festival.reputation,
+            'venue_capacity': festival.venue_capacity,
+            'marketing_budget': festival.marketing_budget
+        },
+        'artists': [
+            {
+                'id': artist.id,
+                'name': artist.name,
+                'genre': artist.genre,
+                'popularity': artist.popularity,
+                'fee': artist.fee,
+                'performance_duration': artist.performance_duration,
+                'stage_requirements': artist.stage_requirements,
+                'status': 'confirmed'  # Default status
+            } for artist in artists
+        ],
+        'vendors': [
+            {
+                'id': vendor.id,
+                'name': vendor.name,
+                'category': vendor.specialty,
+                'type': vendor.specialty,
+                'quality': vendor.quality,
+                'cost': vendor.cost,
+                'revenue': vendor.revenue,
+                'status': 'confirmed'  # Default status
+            } for vendor in vendors
+        ],
+        'tickets': [
+            {
+                'id': 1,
+                'type': 'General Admission',
+                'price': 50.0,
+                'sold_quantity': 0,
+                'total_quantity': festival.venue_capacity
+            }
+        ],
+        'marketing': [],
+        'events': [],
+        'synergies': [],
+        'vendor_relationships': []
+    }
+    
+    return jsonify(festival_data)
 
 @app.route('/api/advance_time/<int:festival_id>', methods=['POST'])
 def advance_time(festival_id):
@@ -190,7 +244,33 @@ def get_risk_assessment(festival_id):
     risk = game_coordinator.event_system.calculate_overall_risk_score(festival)
     return jsonify(risk)
 
+# Socket.IO event handlers
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+    emit('connected', {'data': 'Connected'})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
+
+@socketio.on('join_festival')
+def handle_join_festival(data):
+    festival_id = data.get('festival_id')
+    if festival_id:
+        print(f'Client joined festival {festival_id}')
+        emit('festival_joined', {'festival_id': festival_id})
+
+@socketio.on('request_update')
+def handle_request_update(data):
+    festival_id = data.get('festival_id')
+    if festival_id:
+        # Get updated festival data and emit it
+        festival = Festival.query.get(festival_id)
+        if festival:
+            emit('festival_updated', {'festival_id': festival_id})
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000) 
