@@ -27,14 +27,16 @@ available_vendors_cache = {}
 
 def get_cached_artists(count=5):
     """Get cached available artists, generating new ones if cache is empty"""
-    cache_key = f"artists_{count}"
+    # Use a single cache key for consistency across all requests
+    cache_key = "artists"
     if cache_key not in available_artists_cache:
         available_artists_cache[cache_key] = game_coordinator.get_available_artists(count)
     return available_artists_cache[cache_key]
 
 def get_cached_vendors(count=5):
     """Get cached available vendors, generating new ones if cache is empty"""
-    cache_key = f"vendors_{count}"
+    # Use a single cache key for consistency across all requests
+    cache_key = "vendors"
     if cache_key not in available_vendors_cache:
         available_vendors_cache[cache_key] = game_coordinator.get_available_vendors(count)
     return available_vendors_cache[cache_key]
@@ -284,8 +286,8 @@ def hire_artist_endpoint():
     if not artist_id:
         return jsonify({'success': False, 'error': 'Artist ID required'}), 400
     
-    # Get the artist data from cached available artists
-    artists = get_cached_artists(10)
+    # Get the artist data from cached available artists using the same count as display
+    artists = get_cached_artists(5)  # Use same count as display endpoint
     artist = next((a for a in artists if a['id'] == artist_id), None)
     
     if not artist:
@@ -309,8 +311,8 @@ def hire_vendor_endpoint():
     if not vendor_id:
         return jsonify({'success': False, 'error': 'Vendor ID required'}), 400
     
-    # Get the vendor data from cached available vendors
-    vendors = get_cached_vendors(10)
+    # Get the vendor data from cached available vendors using the same count as display
+    vendors = get_cached_vendors(5)  # Use same count as display endpoint
     vendor = next((v for v in vendors if v['id'] == vendor_id), None)
     
     if not vendor:
