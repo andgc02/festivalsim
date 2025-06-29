@@ -394,14 +394,14 @@ class VendorSystem:
             'fee': cost,
             'revenue': revenue,
             'commission_rate': 0.15,
-            'menu_items': json.dumps(menu_items),
+            'menu_items': menu_items,
             'description': specialty_data['description'],
-            'vendor_specialties': json.dumps(advanced_specialties),
-            'vendor_relationships': json.dumps([]),
-            'vendor_conflicts': json.dumps([]),
+            'vendor_specialties': advanced_specialties,
+            'vendor_relationships': [],
+            'vendor_conflicts': [],
             'placement_location': placement_location,
             'customer_satisfaction': 0.0,
-            'food_allergy_support': json.dumps(allergy_support),
+            'food_allergy_support': allergy_support,
             'alcohol_license': specialty in ['Cocktail Bar', 'Wine Bar'],
             'local_sourcing': 'local_cuisine' in advanced_specialties,
             'sustainability_rating': random.randint(40, 90)
@@ -739,4 +739,20 @@ class VendorSystem:
                 'allergens': ['nuts']
             })
         
-        return menu_items 
+        return menu_items
+    
+    def calculate_vendor_relationships(self, festival_id):
+        """Calculate all vendor relationships for a festival"""
+        vendors = Vendor.query.filter_by(festival_id=festival_id).all()
+        if len(vendors) < 2:
+            return []
+        
+        relationships = []
+        
+        for i, vendor1 in enumerate(vendors):
+            for vendor2 in vendors[i+1:]:
+                relationship = self.analyze_vendor_relationships(vendor1, vendor2)
+                if relationship['type'] != 'neutral':
+                    relationships.append(relationship)
+        
+        return relationships 

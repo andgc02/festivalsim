@@ -7,6 +7,7 @@ from .economy_system import EconomySystem
 from .marketing_system import MarketingSystem
 from .event_system import EventSystem
 from models import db, Festival, Artist, Vendor
+import json
 
 class GameCoordinator:
     """Coordinates all game systems and provides unified interface"""
@@ -143,7 +144,7 @@ class GameCoordinator:
         if festival.budget < vendor_data['cost']:
             return {'success': False, 'error': 'Insufficient budget'}
         
-        # Create vendor
+        # Create vendor with proper JSON serialization for database storage
         vendor = Vendor(
             festival_id=festival_id,
             name=vendor_data['name'],
@@ -151,7 +152,16 @@ class GameCoordinator:
             quality=vendor_data['quality'],
             cost=vendor_data['cost'],
             revenue=vendor_data['revenue'],
-            menu_items=vendor_data['menu_items']
+            menu_items=json.dumps(vendor_data['menu_items']) if vendor_data.get('menu_items') else None,
+            vendor_specialties=json.dumps(vendor_data['vendor_specialties']) if vendor_data.get('vendor_specialties') else None,
+            vendor_relationships=json.dumps(vendor_data['vendor_relationships']) if vendor_data.get('vendor_relationships') else None,
+            vendor_conflicts=json.dumps(vendor_data['vendor_conflicts']) if vendor_data.get('vendor_conflicts') else None,
+            placement_location=vendor_data.get('placement_location'),
+            customer_satisfaction=vendor_data.get('customer_satisfaction', 0.0),
+            food_allergy_support=json.dumps(vendor_data['food_allergy_support']) if vendor_data.get('food_allergy_support') else None,
+            alcohol_license=vendor_data.get('alcohol_license', False),
+            local_sourcing=vendor_data.get('local_sourcing', False),
+            sustainability_rating=vendor_data.get('sustainability_rating', 50)
         )
         
         # Update festival budget

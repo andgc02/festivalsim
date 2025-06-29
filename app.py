@@ -136,10 +136,19 @@ def get_festival_data(festival_id):
                 'name': vendor.name,
                 'category': vendor.specialty,
                 'type': vendor.specialty,
+                'specialty': vendor.specialty,
                 'quality': vendor.quality,
                 'cost': vendor.cost,
                 'revenue': vendor.revenue,
-                'status': 'confirmed'  # Default status
+                'status': 'confirmed',  # Default status
+                'vendor_specialties': json.loads(vendor.vendor_specialties) if vendor.vendor_specialties else [],
+                'placement_location': vendor.placement_location,
+                'customer_satisfaction': vendor.customer_satisfaction,
+                'food_allergy_support': json.loads(vendor.food_allergy_support) if vendor.food_allergy_support else {},
+                'alcohol_license': vendor.alcohol_license,
+                'local_sourcing': vendor.local_sourcing,
+                'sustainability_rating': vendor.sustainability_rating,
+                'menu_items': json.loads(vendor.menu_items) if vendor.menu_items else []
             } for vendor in vendors
         ],
         'tickets': [
@@ -304,27 +313,42 @@ def hire_artist_endpoint():
 @app.route('/api/vendors/hire', methods=['POST'])
 def hire_vendor_endpoint():
     """Hire a vendor"""
-    data = request.get_json()
-    festival_id = data.get('festival_id', 1)  # Default to festival 1
-    vendor_id = data.get('vendor_id')
-    
-    if not vendor_id:
-        return jsonify({'success': False, 'error': 'Vendor ID required'}), 400
-    
-    # Get the vendor data from cached available vendors using the same count as display
-    vendors = get_cached_vendors(5)  # Use same count as display endpoint
-    vendor = next((v for v in vendors if v['id'] == vendor_id), None)
-    
-    if not vendor:
-        return jsonify({'success': False, 'error': 'Vendor not found'}), 404
-    
-    result = game_coordinator.hire_vendor(festival_id, vendor)
-    
-    # Clear the cache after hiring to refresh the available vendors
-    if result.get('success'):
-        clear_vendor_cache()
-    
-    return jsonify(result)
+    try:
+        data = request.get_json()
+        vendor_id = data.get('vendor_id')
+        festival_id = data.get('festival_id')
+        placement_location = data.get('placement_location', 'Food Court')
+        
+        if not vendor_id or not festival_id:
+            return jsonify({'success': False, 'error': 'Missing vendor_id or festival_id'})
+        
+        # Get available vendors
+        available_vendors = get_cached_vendors(10)  # Get more vendors to find the one we want
+        vendor = None
+        
+        for v in available_vendors:
+            if v['id'] == vendor_id:
+                vendor = v
+                break
+        
+        if not vendor:
+            return jsonify({'success': False, 'error': 'Vendor not found'})
+        
+        # Set the placement location
+        vendor['placement_location'] = placement_location
+        
+        # Hire the vendor
+        result = game_coordinator.hire_vendor(festival_id, vendor)
+        
+        if result['success']:
+            # Clear vendor cache to get fresh vendors
+            clear_vendor_cache()
+            
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error hiring vendor: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/marketing/launch', methods=['POST'])
 def launch_marketing_campaign():
@@ -816,6 +840,46 @@ def respond_to_event(festival_id):
         'new_budget': festival.budget,
         'new_reputation': festival.reputation
     })
+
+@app.route('/api/vendors/fire', methods=['POST'])
+def fire_vendor_endpoint():
+    """Fire a vendor"""
+    try:
+        data = request.get_json()
+        vendor_id = data.get('vendor_id')
+        festival_id = data.get('festival_id')
+        
+        if not vendor_id or not festival_id:
+            return jsonify({'success': False, 'error': 'Missing vendor_id or festival_id'})
+        
+        # Get the vendor
+        vendor = Vendor.query.filter_by(id=vendor_id, festival_id=festival_id).first()
+        
+        if not vendor:
+            return jsonify({'success': False, 'error': 'Vendor not found'})
+        
+        # Calculate refund (50% of original cost)
+        refund_amount = vendor.cost * 0.5
+        
+        # Update festival budget
+        festival = Festival.query.get(festival_id)
+        if festival:
+            festival.budget += refund_amount
+        
+        # Delete the vendor
+        db.session.delete(vendor)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Vendor fired successfully. Refunded ${refund_amount:,.0f}',
+            'refund_amount': refund_amount,
+            'remaining_budget': festival.budget if festival else 0
+        })
+        
+    except Exception as e:
+        print(f"Error firing vendor: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 # Socket.IO event handlers
 @socketio.on('connect')
