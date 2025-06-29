@@ -185,7 +185,7 @@ class ArtistSystem:
             'fee': fee,
             'performance_duration': duration,
             'stage_requirements': stage_req_text,
-            'special_requests': special_requests
+            'special_requests': json.dumps(special_requests)  # Convert to JSON string for database
         }
     
     def calculate_genre_synergies(self, festival_id):

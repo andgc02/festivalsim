@@ -61,7 +61,8 @@ def dashboard(festival_id):
     festival = Festival.query.get_or_404(festival_id)
     festivals = Festival.query.all()
     
-    return render_template('dashboard.html', festival=festival, festivals=festivals)
+    # Use the refactored template for better modularity
+    return render_template('dashboard_refactored.html', festival=festival, festivals=festivals)
 
 @app.route('/api/festival/<int:festival_id>')
 def get_festival_data(festival_id):
@@ -136,6 +137,11 @@ def get_available_artists():
     artists = game_coordinator.get_available_artists(count)
     return jsonify(artists)
 
+@app.route('/api/artists')
+def get_artists():
+    """Get all available artists (alias for available)"""
+    return get_available_artists()
+
 @app.route('/api/vendors/available')
 def get_available_vendors():
     """Get available vendors for hiring"""
@@ -143,29 +149,112 @@ def get_available_vendors():
     vendors = game_coordinator.get_available_vendors(count)
     return jsonify(vendors)
 
-@app.route('/api/artists/hire/<int:festival_id>', methods=['POST'])
-def hire_artist(festival_id):
+@app.route('/api/vendors')
+def get_vendors():
+    """Get all available vendors (alias for available)"""
+    return get_available_vendors()
+
+@app.route('/api/marketing/campaigns')
+def get_marketing_campaigns():
+    """Get available marketing campaigns"""
+    campaigns = [
+        {
+            'id': 1,
+            'name': 'Social Media Blitz',
+            'type': 'social_media',
+            'effectiveness': 1.25,
+            'duration_days': 7,
+            'cost': 5000
+        },
+        {
+            'id': 2,
+            'name': 'Radio Advertisement',
+            'type': 'radio',
+            'effectiveness': 1.15,
+            'duration_days': 14,
+            'cost': 8000
+        },
+        {
+            'id': 3,
+            'name': 'Billboard Campaign',
+            'type': 'billboard',
+            'effectiveness': 1.20,
+            'duration_days': 30,
+            'cost': 15000
+        },
+        {
+            'id': 4,
+            'name': 'Influencer Partnership',
+            'type': 'influencer',
+            'effectiveness': 1.35,
+            'duration_days': 5,
+            'cost': 12000
+        }
+    ]
+    return jsonify(campaigns)
+
+@app.route('/api/artists/hire', methods=['POST'])
+def hire_artist_endpoint():
     """Hire an artist"""
     data = request.get_json()
-    result = game_coordinator.hire_artist(festival_id, data)
+    festival_id = data.get('festival_id', 1)  # Default to festival 1
+    artist_id = data.get('artist_id')
+    
+    if not artist_id:
+        return jsonify({'success': False, 'error': 'Artist ID required'}), 400
+    
+    # Get the artist data from available artists
+    artists = game_coordinator.get_available_artists(10)
+    artist = next((a for a in artists if a['id'] == artist_id), None)
+    
+    if not artist:
+        return jsonify({'success': False, 'error': 'Artist not found'}), 404
+    
+    result = game_coordinator.hire_artist(festival_id, artist)
     return jsonify(result)
 
-@app.route('/api/vendors/hire/<int:festival_id>', methods=['POST'])
-def hire_vendor(festival_id):
+@app.route('/api/vendors/hire', methods=['POST'])
+def hire_vendor_endpoint():
     """Hire a vendor"""
     data = request.get_json()
-    result = game_coordinator.hire_vendor(festival_id, data)
+    festival_id = data.get('festival_id', 1)  # Default to festival 1
+    vendor_id = data.get('vendor_id')
+    
+    if not vendor_id:
+        return jsonify({'success': False, 'error': 'Vendor ID required'}), 400
+    
+    # Get the vendor data from available vendors
+    vendors = game_coordinator.get_available_vendors(10)
+    vendor = next((v for v in vendors if v['id'] == vendor_id), None)
+    
+    if not vendor:
+        return jsonify({'success': False, 'error': 'Vendor not found'}), 404
+    
+    result = game_coordinator.hire_vendor(festival_id, vendor)
     return jsonify(result)
 
-@app.route('/api/marketing/campaign/<int:festival_id>', methods=['POST'])
-def run_marketing_campaign(festival_id):
-    """Run a marketing campaign"""
+@app.route('/api/marketing/launch', methods=['POST'])
+def launch_marketing_campaign():
+    """Launch a marketing campaign"""
     data = request.get_json()
+    festival_id = data.get('festival_id', 1)
+    campaign_id = data.get('campaign_id')
+    
+    if not campaign_id:
+        return jsonify({'success': False, 'error': 'Campaign ID required'}), 400
+    
+    # Get campaign data
+    campaigns = get_marketing_campaigns().json
+    campaign = next((c for c in campaigns if c['id'] == campaign_id), None)
+    
+    if not campaign:
+        return jsonify({'success': False, 'error': 'Campaign not found'}), 404
+    
     result = game_coordinator.run_marketing_campaign(
         festival_id, 
-        data['campaign_type'], 
-        data['target_audience'], 
-        data['budget']
+        campaign['type'], 
+        'general', 
+        campaign['cost']
     )
     return jsonify(result)
 
@@ -243,6 +332,23 @@ def get_risk_assessment(festival_id):
     festival = Festival.query.get_or_404(festival_id)
     risk = game_coordinator.event_system.calculate_overall_risk_score(festival)
     return jsonify(risk)
+
+@app.route('/api/festival/auto_save', methods=['POST'])
+def auto_save_festival():
+    """Auto-save festival data"""
+    data = request.get_json()
+    festival_id = data.get('festival_id')
+    
+    if not festival_id:
+        return jsonify({'success': False, 'error': 'Festival ID required'}), 400
+    
+    festival = Festival.query.get(festival_id)
+    if not festival:
+        return jsonify({'success': False, 'error': 'Festival not found'}), 404
+    
+    # In a real application, you might want to save additional data
+    # For now, we'll just return success
+    return jsonify({'success': True, 'message': 'Auto-save completed'})
 
 # Socket.IO event handlers
 @socketio.on('connect')

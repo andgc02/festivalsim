@@ -1,0 +1,703 @@
+{% extends "base.html" %}
+{% from "components/stats_card.html" import stats_card %}
+{% from "components/analytics_card.html" import analytics_card, metric_item %}
+{% from "components/sidebar_card.html" import sidebar_card %}
+
+{% block title %}{{ festival.name }} - Festival Simulator{% endblock %}
+
+{% block content %}
+<div data-festival-id="{{ festival.id }}">
+<!-- Festival Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-5 fw-bold text-primary mb-2">
+                    <i class="fas fa-music me-3"></i>{{ festival.name }}
+                </h1>
+                <p class="lead text-muted mb-0">
+                    <i class="fas fa-clock me-2"></i>{{ festival.days_remaining }} days until festival
+                    <span class="mx-3">•</span>
+                    <i class="fas fa-star me-2"></i>Reputation: {{ festival.reputation }}/100
+                </p>
+            </div>
+            <div class="text-end">
+                <div class="badge bg-success fs-6 px-3 py-2">
+                    <i class="fas fa-circle me-2"></i>Active
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    {{ stats_card('budgetDisplay', "${:,.0f}".format(festival.budget), 'Current Budget', 'fa-dollar-sign') }}
+    {{ stats_card('daysRemaining', festival.days_remaining, 'Days Remaining', 'fa-calendar') }}
+    {{ stats_card('ticketsSold', '0', 'Tickets Sold', 'fa-ticket-alt') }}
+    {{ stats_card('artistsCount', '0', 'Artists Hired', 'fa-microphone') }}
+    {{ stats_card('vendorsCount', '0', 'Vendors Hired', 'fa-store') }}
+    {{ stats_card('daysUntilFestival', festival.days_remaining, 'Days Until Festival', 'fa-clock') }}
+</div>
+
+<!-- Main Content Area -->
+<div class="row">
+    <!-- Left Column -->
+    <div class="col-lg-8">
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-outline-primary w-100" onclick="showArtists()">
+                            <i class="fas fa-microphone me-2"></i>Hire Artists
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-outline-success w-100" onclick="showVendors()">
+                            <i class="fas fa-store me-2"></i>Hire Vendors
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-outline-warning w-100" onclick="showMarketing()">
+                            <i class="fas fa-bullhorn me-2"></i>Launch Marketing
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-outline-info w-100" onclick="advanceTime()">
+                            <i class="fas fa-clock me-2"></i>Advance Time
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Festival Overview -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Festival Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <canvas id="revenueChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <canvas id="budgetChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <canvas id="artistPopularityChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <canvas id="vendorQualityChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Dashboard -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-analytics me-2"></i>Analytics Dashboard
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Financial Metrics -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-dollar-sign me-2"></i>Financial Metrics
+                        </h6>
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Total Revenue</div>
+                                <div class="fw-bold" id="totalRevenue">$0</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Budget Used</div>
+                                <div class="fw-bold" id="budgetUsed">0%</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Avg Ticket Price</div>
+                                <div class="fw-bold" id="avgTicketPrice">$0</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">ROI</div>
+                                <div class="fw-bold" id="roi">0%</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Expected Revenue</div>
+                                <div class="fw-bold" id="expectedRevenue">$0</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Expected Attendance</div>
+                                <div class="fw-bold" id="expectedAttendance">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Performance Metrics -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-success mb-3">
+                            <i class="fas fa-trophy me-2"></i>Performance Metrics
+                        </h6>
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Festival Score</div>
+                                <div class="fw-bold" id="festivalScore">0/100</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Festival Reputation</div>
+                                <div class="fw-bold" id="festivalReputation">{{ festival.reputation }}/100</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Artist Satisfaction</div>
+                                <div class="fw-bold" id="artistSatisfactionScore">N/A</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Vendor Satisfaction</div>
+                                <div class="fw-bold" id="vendorSatisfactionScore">N/A</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Avg Artist Popularity</div>
+                                <div class="fw-bold" id="avgArtistPopularity">0</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Avg Vendor Quality</div>
+                                <div class="fw-bold" id="avgVendorQuality">0</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Marketing Effectiveness</div>
+                                <div class="fw-bold" id="marketingEffectiveness">100%</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Marketing Budget</div>
+                                <div class="fw-bold" id="marketingBudget">${{ festival.marketing_budget }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Operational Metrics -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6 class="text-warning mb-3">
+                            <i class="fas fa-cogs me-2"></i>Operational Metrics
+                        </h6>
+                        <div class="row">
+                            <div class="col-3 mb-2">
+                                <div class="small text-muted">Total Artists</div>
+                                <div class="fw-bold" id="totalArtists">0</div>
+                            </div>
+                            <div class="col-3 mb-2">
+                                <div class="small text-muted">Total Vendors</div>
+                                <div class="fw-bold" id="totalVendors">0</div>
+                            </div>
+                            <div class="col-3 mb-2">
+                                <div class="small text-muted">Active Marketing</div>
+                                <div class="fw-bold" id="activeMarketing">0</div>
+                            </div>
+                            <div class="col-3 mb-2">
+                                <div class="small text-muted">Pending Events</div>
+                                <div class="fw-bold" id="pendingEvents">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Artist Synergies -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-magic me-2"></i>Artist Synergies
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="synergiesContainer">
+                    <p class="text-muted">No synergies available yet. Hire more artists to unlock synergies!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendor Relationships -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-handshake me-2"></i>Vendor Relationships
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="vendorRelationshipsContainer">
+                    <p class="text-muted">No vendor relationships to display. Hire more vendors to see relationships!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-lg-4">
+        <!-- Festival Navigation -->
+        {% call sidebar_card('Festivals', 'fa-festival') %}
+            <div class="list-group">
+                {% for f in festivals %}
+                <a href="{{ url_for('dashboard', festival_id=f.id) }}" 
+                   class="list-group-item list-group-item-action {% if f.id == festival.id %}active{% endif %}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ f.name }}</h6>
+                        <small>{{ f.days_remaining }} days</small>
+                    </div>
+                    <small>Budget: ${{ "{:,.0f}".format(f.budget) }}</small>
+                </a>
+                {% endfor %}
+            </div>
+        {% endcall %}
+
+        <!-- Events -->
+        {% call sidebar_card('Events & Alerts', 'fa-exclamation-triangle', 'warning', 'dark') %}
+            <div id="eventsContainer">
+                <p class="text-muted text-center">No events at the moment.</p>
+            </div>
+        {% endcall %}
+
+        <!-- Risk Assessment -->
+        {% call sidebar_card('Risk Assessment', 'fa-exclamation-triangle', 'danger') %}
+            <div id="riskAssessmentContainer">
+                <p class="text-muted">Loading risk assessment...</p>
+            </div>
+        {% endcall %}
+
+        <!-- Marketing Recommendations -->
+        {% call sidebar_card('Marketing Tips', 'fa-lightbulb', 'info') %}
+            <div id="marketingRecommendationsContainer">
+                <p class="text-muted">Loading recommendations...</p>
+            </div>
+        {% endcall %}
+
+        <!-- Approaching Artists -->
+        <div class="card mb-4" id="approachingArtistsCard" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-star me-2"></i>Artists Want to Join!
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">Your festival's popularity is attracting talent!</p>
+                <div id="approachingArtistsList">
+                    <p class="text-muted text-center">Loading approaching artists...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hired Artists -->
+        {% call sidebar_card('Hired Artists', 'fa-microphone') %}
+            <div id="artistsList">
+                <p class="text-muted text-center">No artists hired yet.</p>
+            </div>
+        {% endcall %}
+
+        <!-- Hired Vendors -->
+        {% call sidebar_card('Hired Vendors', 'fa-store') %}
+            <div id="vendorsList">
+                <p class="text-muted text-center">No vendors hired yet.</p>
+            </div>
+        {% endcall %}
+
+        <!-- Approaching Vendors -->
+        <div class="card mt-4" id="approachingVendorsCard" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-star me-2"></i>Vendors Want to Join!
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">Your festival's success is attracting vendors!</p>
+                <div id="approachingVendorsList">
+                    <p class="text-muted text-center">Loading approaching vendors...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Include the modals from the original dashboard -->
+{% include 'components/dashboard_modals.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/components/DashboardManager.js') }}"></script>
+<script>
+// Initialize dashboard with the new modular approach
+let dashboardManager;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard initialized');
+    
+    const festivalElement = document.querySelector('[data-festival-id]');
+    if (!festivalElement) {
+        console.error('No valid festival ID found');
+        showAlert('Error: No festival data available', 'danger');
+        return;
+    }
+    
+    const festivalId = parseInt(festivalElement.dataset.festivalId);
+    dashboardManager = new DashboardManager(festivalId);
+    
+    // Load initial data
+    dashboardManager.loadFestivalData();
+    
+    // Set up periodic data refresh
+    setInterval(() => dashboardManager.loadFestivalData(), 60000);
+});
+
+// Global functions that interact with the dashboard manager
+async function loadFestivalData(forceRefresh = false) {
+    if (dashboardManager) {
+        await dashboardManager.loadFestivalData(forceRefresh);
+    }
+}
+
+async function advanceTime() {
+    if (!dashboardManager) return;
+    
+    try {
+        showLoading();
+        const result = await apiCall(`/api/advance_time/${dashboardManager.festivalId}`, 'POST');
+        
+        if (result.success) {
+            showAlert('Time advanced successfully!', 'success');
+            await dashboardManager.loadFestivalData(true);
+        } else {
+            showAlert('Failed to advance time: ' + result.error, 'danger');
+        }
+    } catch (error) {
+        console.error('Error advancing time:', error);
+        showAlert('Error advancing time: ' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Navigation functions - these are called from the navbar
+function showArtists() {
+    console.log('showArtists called');
+    loadAvailableArtists();
+    const modal = new bootstrap.Modal(document.getElementById('artistsModal'));
+    modal.show();
+}
+
+function showVendors() {
+    console.log('showVendors called');
+    loadAvailableVendors();
+    const modal = new bootstrap.Modal(document.getElementById('vendorsModal'));
+    modal.show();
+}
+
+function showMarketing() {
+    console.log('showMarketing called');
+    loadMarketingCampaigns();
+    const modal = new bootstrap.Modal(document.getElementById('marketingModal'));
+    modal.show();
+}
+
+function showLayout() {
+    console.log('showLayout called');
+    const modal = new bootstrap.Modal(document.getElementById('layoutModal'));
+    modal.show();
+}
+
+function showSchedule() {
+    console.log('showSchedule called');
+    const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+    modal.show();
+}
+
+async function loadAvailableArtists() {
+    try {
+        console.log('Loading available artists...');
+        const artists = await apiCall('/api/artists');
+        const container = document.getElementById('availableArtistsList');
+        
+        container.innerHTML = artists.map(artist => `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="card-title">${artist.name}</h5>
+                            <p class="card-text">
+                                <strong>Genre:</strong> ${artist.genre}<br>
+                                <strong>Popularity:</strong> ${artist.popularity}/100<br>
+                                <strong>Performance Duration:</strong> ${artist.performance_duration} minutes<br>
+                                <strong>Stage Requirements:</strong> ${artist.stage_requirements || 'None'}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                <strong class="text-primary">${formatCurrency(artist.fee)}</strong>
+                            </div>
+                            <button class="btn btn-primary" onclick="hireArtist(${artist.id})">
+                                <i class="fas fa-plus me-2"></i>Hire Artist
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        console.log('Artists loaded successfully');
+    } catch (error) {
+        console.error('Error loading artists:', error);
+        showAlert('Error loading artists: ' + error.message, 'danger');
+    }
+}
+
+async function loadAvailableVendors() {
+    try {
+        console.log('Loading available vendors...');
+        const vendors = await apiCall('/api/vendors');
+        const container = document.getElementById('availableVendorsList');
+        
+        container.innerHTML = vendors.map(vendor => `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="card-title">${vendor.name}</h5>
+                            <p class="card-text">
+                                <strong>Type:</strong> ${vendor.type}<br>
+                                <strong>Category:</strong> ${vendor.category}<br>
+                                <strong>Commission Rate:</strong> ${(vendor.commission_rate * 100).toFixed(1)}%
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                <strong class="text-primary">${formatCurrency(vendor.fee)}</strong>
+                            </div>
+                            <button class="btn btn-success" onclick="hireVendor(${vendor.id})">
+                                <i class="fas fa-plus me-2"></i>Hire Vendor
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        console.log('Vendors loaded successfully');
+    } catch (error) {
+        console.error('Error loading vendors:', error);
+        showAlert('Error loading vendors: ' + error.message, 'danger');
+    }
+}
+
+async function loadMarketingCampaigns() {
+    try {
+        console.log('Loading marketing campaigns...');
+        const campaigns = await apiCall('/api/marketing/campaigns');
+        const container = document.getElementById('marketingCampaignsList');
+        
+        container.innerHTML = campaigns.map(campaign => `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="card-title">${campaign.name}</h5>
+                            <p class="card-text">
+                                <strong>Type:</strong> ${campaign.type.replace('_', ' ').toUpperCase()}<br>
+                                <strong>Effectiveness:</strong> ${((campaign.effectiveness - 1) * 100).toFixed(0)}% boost<br>
+                                <strong>Duration:</strong> ${campaign.duration_days} days
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                <strong class="text-primary">${formatCurrency(campaign.cost)}</strong>
+                            </div>
+                            <button class="btn btn-warning" onclick="launchMarketing(${campaign.id})">
+                                <i class="fas fa-rocket me-2"></i>Launch Campaign
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        console.log('Marketing campaigns loaded successfully');
+    } catch (error) {
+        console.error('Error loading marketing campaigns:', error);
+        showAlert('Error loading marketing campaigns: ' + error.message, 'danger');
+    }
+}
+
+async function hireArtist(artistId) {
+    try {
+        console.log('Hiring artist:', artistId);
+        showLoading();
+        const result = await apiCall('/api/artists/hire', 'POST', { 
+            artist_id: artistId,
+            festival_id: dashboardManager ? dashboardManager.festivalId : 1
+        });
+        
+        if (result.success) {
+            showAlert('Artist hired successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('artistsModal')).hide();
+            await dashboardManager.loadFestivalData(true);
+        } else {
+            if (result.error && result.error.includes('Insufficient budget')) {
+                showAlert('Insufficient budget to hire this artist!', 'danger');
+            } else {
+                showAlert(result.error || 'Failed to hire artist', 'danger');
+            }
+        }
+    } catch (error) {
+        console.error('Error hiring artist:', error);
+        showAlert('Error hiring artist: ' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function hireVendor(vendorId) {
+    try {
+        console.log('Hiring vendor:', vendorId);
+        showLoading();
+        const result = await apiCall('/api/vendors/hire', 'POST', { 
+            vendor_id: vendorId,
+            festival_id: dashboardManager ? dashboardManager.festivalId : 1
+        });
+        
+        if (result.success) {
+            showAlert('Vendor hired successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('vendorsModal')).hide();
+            await dashboardManager.loadFestivalData(true);
+        } else {
+            if (result.error && result.error.includes('Insufficient budget')) {
+                showAlert('Insufficient budget to hire this vendor!', 'danger');
+            } else {
+                showAlert(result.error || 'Failed to hire vendor', 'danger');
+            }
+        }
+    } catch (error) {
+        console.error('Error hiring vendor:', error);
+        showAlert('Error hiring vendor: ' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function launchMarketing(campaignId) {
+    try {
+        console.log('Launching marketing campaign:', campaignId);
+        showLoading();
+        const result = await apiCall('/api/marketing/launch', 'POST', { 
+            campaign_id: campaignId,
+            festival_id: dashboardManager ? dashboardManager.festivalId : 1
+        });
+        
+        if (result.success) {
+            showAlert('Marketing campaign launched successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('marketingModal')).hide();
+            await dashboardManager.loadFestivalData(true);
+        } else {
+            showAlert(result.error || 'Failed to launch campaign', 'danger');
+        }
+    } catch (error) {
+        console.error('Error launching marketing campaign:', error);
+        showAlert('Error launching campaign: ' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Pause menu functions
+function showPauseMenu() {
+    console.log('showPauseMenu called');
+    console.log('Current festival ID:', dashboardManager ? dashboardManager.festivalId : 'Not initialized');
+    console.log('Current festival data:', dashboardManager ? dashboardManager.festivalData : 'Not available');
+    
+    updatePauseMenuInfo();
+    
+    const modal = document.getElementById('pauseModal');
+    if (modal) {
+        console.log('Pause modal found, showing...');
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+    } else {
+        console.error('Pause modal not found');
+    }
+}
+
+function updatePauseMenuInfo() {
+    if (dashboardManager && dashboardManager.festivalData && dashboardManager.festivalData.festival) {
+        const festival = dashboardManager.festivalData.festival;
+        
+        const nameElement = document.getElementById('currentFestivalName');
+        const locationElement = document.getElementById('currentFestivalLocation');
+        const dateElement = document.getElementById('currentFestivalDate');
+        const budgetElement = document.getElementById('currentFestivalBudget');
+        const statusElement = document.getElementById('currentFestivalStatus');
+        const daysElement = document.getElementById('currentFestivalDays');
+        
+        if (nameElement) nameElement.textContent = festival.name || 'Unknown';
+        if (locationElement) locationElement.textContent = festival.location || 'Unknown';
+        if (dateElement) dateElement.textContent = festival.date ? new Date(festival.date).toLocaleDateString() : 'Not set';
+        if (budgetElement) budgetElement.textContent = formatCurrency(festival.current_budget || festival.budget || 0);
+        
+        if (statusElement) {
+            const status = festival.status || 'active';
+            statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            statusElement.className = `badge bg-${status === 'active' ? 'success' : 'warning'}`;
+        }
+        
+        if (daysElement) {
+            let daysUntil;
+            if (festival.current_game_date) {
+                daysUntil = Math.ceil((new Date(festival.date) - new Date(festival.current_game_date)) / (1000 * 60 * 60 * 24));
+            } else {
+                daysUntil = Math.ceil((new Date(festival.date) - new Date()) / (1000 * 60 * 60 * 24));
+            }
+            daysElement.textContent = daysUntil > 0 ? daysUntil : 'Today!';
+        }
+    } else {
+        console.log('No festival data available for pause menu, loading...');
+        if (dashboardManager) {
+            dashboardManager.loadFestivalData(true).then(() => {
+                setTimeout(updatePauseMenuInfo, 100);
+            }).catch(error => {
+                console.error('Failed to load festival data for pause menu:', error);
+                const elements = ['currentFestivalName', 'currentFestivalLocation', 'currentFestivalDate', 'currentFestivalBudget', 'currentFestivalStatus', 'currentFestivalDays'];
+                elements.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) element.textContent = 'Error loading data';
+                });
+            });
+        }
+    }
+}
+
+// Utility functions
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount || 0);
+}
+
+function showLoading() {
+    // Implement loading indicator
+    console.log('Loading...');
+}
+
+function hideLoading() {
+    // Hide loading indicator
+    console.log('Loading complete');
+}
+</script>
+{% endblock %} 

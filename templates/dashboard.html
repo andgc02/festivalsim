@@ -2465,38 +2465,41 @@ function stopAutoSave() {
 
 function updateSynergies(synergies) {
     try {
-        const card = document.getElementById('synergiesCard');
-        const container = document.getElementById('synergiesList');
+        const container = document.getElementById('synergiesContainer');
         
-        if (!synergies || synergies.length === 0) {
-            card.style.display = 'none';
+        if (!container) {
+            console.warn('Synergies container not found');
             return;
         }
         
-        card.style.display = 'block';
+        if (!synergies || synergies.length === 0) {
+            container.innerHTML = '<p class="text-muted">No synergies available yet. Hire more artists to unlock synergies!</p>';
+            return;
+        }
+        
         container.innerHTML = synergies.map(synergy => `
             <div class="card mb-3 border-primary">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-8 col-sm-12">
                             <h6 class="card-title text-primary">
-                                <i class="fas fa-magic me-2"></i>${synergy.name}
+                                <i class="fas fa-magic me-2"></i>${synergy.name || 'Synergy'}
                             </h6>
-                            <p class="card-text small mb-2">${synergy.description}</p>
+                            <p class="card-text small mb-2">${synergy.description || 'Genre synergy effect'}</p>
                             <div class="mb-2">
                                 <small class="text-muted">
-                                    <strong>Genres:</strong> ${synergy.genres.join(', ')}<br>
-                                    <strong>Artists:</strong> ${synergy.artist_count}
+                                    <strong>Genres:</strong> ${(synergy.genres || []).join(', ')}<br>
+                                    <strong>Artists:</strong> ${synergy.artist_count || 0}
                                 </small>
                             </div>
                         </div>
                         <div class="col-md-4 col-sm-12 text-end">
                             <div class="mb-2">
                                 <div class="badge bg-success mb-1">
-                                    <i class="fas fa-chart-line me-1"></i>+${(synergy.marketing_bonus * 100).toFixed(0)}% Marketing
+                                    <i class="fas fa-chart-line me-1"></i>+${((synergy.marketing_bonus || 0) * 100).toFixed(0)}% Marketing
                                 </div>
                                 <div class="badge bg-info">
-                                    <i class="fas fa-star me-1"></i>+${synergy.reputation_bonus} Reputation
+                                    <i class="fas fa-star me-1"></i>+${synergy.reputation_bonus || 0} Reputation
                                 </div>
                             </div>
                         </div>
@@ -2512,23 +2515,26 @@ function updateSynergies(synergies) {
 // Update vendor relationships
 function updateVendorRelationships(relationships) {
     try {
-        const card = document.getElementById('vendorRelationshipsCard');
-        const container = document.getElementById('vendorRelationshipsList');
+        const container = document.getElementById('vendorRelationshipsContainer');
         
-        if (!relationships || relationships.length === 0) {
-            card.style.display = 'none';
+        if (!container) {
+            console.warn('Vendor relationships container not found');
             return;
         }
         
-        card.style.display = 'block';
+        if (!relationships || relationships.length === 0) {
+            container.innerHTML = '<p class="text-muted">No vendor relationships to display. Hire more vendors to see relationships!</p>';
+            return;
+        }
+        
         container.innerHTML = relationships.map(relationship => {
             const isComplementary = relationship.type === 'complementary';
             const borderClass = isComplementary ? 'border-success' : 'border-warning';
             const titleClass = isComplementary ? 'text-success' : 'text-warning';
             const icon = isComplementary ? 'fa-handshake' : 'fa-exclamation-triangle';
             const bonusText = isComplementary ? 
-                `+${(relationship.bonus * 100).toFixed(0)}% Satisfaction` : 
-                `${(relationship.penalty * 100).toFixed(0)}% Satisfaction Penalty`;
+                `+${((relationship.bonus || 0) * 100).toFixed(0)}% Satisfaction` : 
+                `${((relationship.penalty || 0) * 100).toFixed(0)}% Satisfaction Penalty`;
             
             return `
                 <div class="card mb-3 ${borderClass}">
@@ -2536,9 +2542,9 @@ function updateVendorRelationships(relationships) {
                         <div class="row">
                             <div class="col-md-8 col-sm-12">
                                 <h6 class="card-title ${titleClass}">
-                                    <i class="fas ${icon} me-2"></i>${relationship.vendor1} & ${relationship.vendor2}
+                                    <i class="fas ${icon} me-2"></i>${relationship.vendor1 || 'Vendor 1'} & ${relationship.vendor2 || 'Vendor 2'}
                                 </h6>
-                                <p class="card-text small mb-2">${relationship.description}</p>
+                                <p class="card-text small mb-2">${relationship.description || 'Vendor relationship effect'}</p>
                                 <div class="badge ${isComplementary ? 'bg-success' : 'bg-warning'}">
                                     ${bonusText}
                                 </div>
@@ -2546,7 +2552,7 @@ function updateVendorRelationships(relationships) {
                             <div class="col-md-4 col-sm-12 text-end">
                                 <div class="mb-2">
                                     <small class="text-muted">
-                                        <strong>Type:</strong> ${relationship.type.charAt(0).toUpperCase() + relationship.type.slice(1)}
+                                        <strong>Type:</strong> ${(relationship.type || 'unknown').charAt(0).toUpperCase() + (relationship.type || 'unknown').slice(1)}
                                     </small>
                                 </div>
                             </div>

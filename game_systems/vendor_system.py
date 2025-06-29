@@ -227,11 +227,15 @@ class VendorSystem:
             'id': vendor_id,
             'name': name,
             'specialty': specialty,
+            'type': specialty,
+            'category': specialty,
             'quality': quality,
             'quality_level': quality_level,
             'cost': cost,
+            'fee': cost,
             'revenue': revenue,
-            'menu_items': menu_items,
+            'commission_rate': 0.15,
+            'menu_items': json.dumps(menu_items),
             'description': specialty_data['description']
         }
     
