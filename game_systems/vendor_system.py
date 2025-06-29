@@ -316,6 +316,70 @@ class VendorSystem:
                 'description': 'Dedicated allergen-free preparation'
             }
         }
+        
+        # Food categories for menu generation
+        self.food_categories = {
+            'American': {
+                'price_range': (8, 15),
+                'allergens': ['dairy', 'gluten']
+            },
+            'Mexican': {
+                'price_range': (7, 12),
+                'allergens': ['dairy', 'gluten']
+            },
+            'Italian': {
+                'price_range': (9, 16),
+                'allergens': ['dairy', 'gluten']
+            },
+            'Asian': {
+                'price_range': (8, 14),
+                'allergens': ['soy', 'shellfish']
+            },
+            'Mediterranean': {
+                'price_range': (9, 15),
+                'allergens': ['dairy', 'nuts']
+            }
+        }
+        
+        # Beverage types for menu generation
+        self.beverage_types = {
+            'Soft Drinks': {
+                'price': 3,
+                'allergens': []
+            },
+            'Water': {
+                'price': 2,
+                'allergens': []
+            },
+            'Juice': {
+                'price': 4,
+                'allergens': []
+            },
+            'Smoothies': {
+                'price': 6,
+                'allergens': ['dairy']
+            },
+            'Coffee': {
+                'price': 4,
+                'allergens': []
+            },
+            'Tea': {
+                'price': 3,
+                'allergens': []
+            },
+            'Beer': {
+                'price': 7,
+                'allergens': ['gluten']
+            },
+            'Wine': {
+                'price': 10,
+                'allergens': []
+            },
+            'Cocktails': {
+                'price': 12,
+                'allergens': []
+            }
+        }
     
     def generate_vendor_name(self, specialty):
         """Generate a vendor name based on specialty"""

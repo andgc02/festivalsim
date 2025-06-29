@@ -628,16 +628,46 @@ class DashboardManager {
     }
 
     formatCurrency(amount) {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(amount || 0);
+        if (!amount || amount === 0) return '$0';
+        
+        const num = parseFloat(amount);
+        
+        // Handle very large numbers with abbreviations
+        if (num >= 1e12) {
+            return '$' + (num / 1e12).toFixed(1) + 'T';
+        } else if (num >= 1e9) {
+            return '$' + (num / 1e9).toFixed(1) + 'B';
+        } else if (num >= 1e6) {
+            return '$' + (num / 1e6).toFixed(1) + 'M';
+        } else if (num >= 1e3) {
+            return '$' + (num / 1e3).toFixed(1) + 'K';
+        } else {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(num);
+        }
     }
 
     formatNumber(num) {
-        return new Intl.NumberFormat('en-US').format(num || 0);
+        if (!num || num === 0) return '0';
+        
+        const number = parseFloat(num);
+        
+        // Handle very large numbers with abbreviations
+        if (number >= 1e12) {
+            return (number / 1e12).toFixed(1) + 'T';
+        } else if (number >= 1e9) {
+            return (number / 1e9).toFixed(1) + 'B';
+        } else if (number >= 1e6) {
+            return (number / 1e6).toFixed(1) + 'M';
+        } else if (number >= 1e3) {
+            return (number / 1e3).toFixed(1) + 'K';
+        } else {
+            return new Intl.NumberFormat('en-US').format(number);
+        }
     }
 
     showAlert(message, type = 'info') {

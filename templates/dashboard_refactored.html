@@ -348,6 +348,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up periodic data refresh
     setInterval(() => dashboardManager.loadFestivalData(), 60000);
+    
+    // Format all stats numbers
+    formatStatsNumbers();
 });
 
 // Global functions that interact with the dashboard manager
@@ -739,12 +742,46 @@ function updatePauseMenuInfo() {
 
 // Utility functions
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(amount || 0);
+    if (!amount || amount === 0) return '$0';
+    
+    const num = parseFloat(amount);
+    
+    // Handle very large numbers with abbreviations
+    if (num >= 1e12) {
+        return '$' + (num / 1e12).toFixed(1) + 'T';
+    } else if (num >= 1e9) {
+        return '$' + (num / 1e9).toFixed(1) + 'B';
+    } else if (num >= 1e6) {
+        return '$' + (num / 1e6).toFixed(1) + 'M';
+    } else if (num >= 1e3) {
+        return '$' + (num / 1e3).toFixed(1) + 'K';
+    } else {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(num);
+    }
+}
+
+function formatNumber(num) {
+    if (!num || num === 0) return '0';
+    
+    const number = parseFloat(num);
+    
+    // Handle very large numbers with abbreviations
+    if (number >= 1e12) {
+        return (number / 1e12).toFixed(1) + 'T';
+    } else if (number >= 1e9) {
+        return (number / 1e9).toFixed(1) + 'B';
+    } else if (number >= 1e6) {
+        return (number / 1e6).toFixed(1) + 'M';
+    } else if (number >= 1e3) {
+        return (number / 1e3).toFixed(1) + 'K';
+    } else {
+        return new Intl.NumberFormat('en-US').format(number);
+    }
 }
 
 function showLoading() {
@@ -824,6 +861,31 @@ function setupModalFocusManagement() {
         const triggerElement = document.querySelector('[data-bs-target="#' + event.target.id + '"]');
         if (triggerElement) {
             triggerElement.focus();
+        }
+    });
+}
+
+// Function to format all stats numbers
+function formatStatsNumbers() {
+    const statsElements = document.querySelectorAll('.stats-number');
+    statsElements.forEach(element => {
+        const value = parseFloat(element.getAttribute('data-value') || element.textContent);
+        const formatType = element.getAttribute('data-format') || 'number';
+        
+        if (!isNaN(value)) {
+            let formattedValue;
+            if (formatType === 'currency') {
+                formattedValue = formatCurrency(value);
+            } else {
+                formattedValue = formatNumber(value);
+            }
+            
+            const formattedSpan = element.querySelector('.formatted-value');
+            if (formattedSpan) {
+                formattedSpan.textContent = formattedValue;
+            } else {
+                element.textContent = formattedValue;
+            }
         }
     });
 }
