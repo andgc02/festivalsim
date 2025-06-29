@@ -289,31 +289,140 @@ class DashboardManager {
             return;
         }
 
-        const eventsHtml = events.map(event => {
+        const eventsHtml = events.map((event, index) => {
             const severityClass = event.severity === 'positive' ? 'success' : 
                                 event.severity === 'negative' ? 'danger' : 'warning';
             const severityIcon = event.severity === 'positive' ? 'fa-check-circle' : 
                                event.severity === 'negative' ? 'fa-exclamation-triangle' : 'fa-info-circle';
             
+            // Generate interactive options HTML
+            let optionsHtml = '';
+            if (event.interactive_options && event.interactive_options.length > 0) {
+                optionsHtml = `
+                    <div class="mt-3">
+                        <h6 class="text-muted mb-2">Choose your response:</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            ${event.interactive_options.map(option => `
+                                <button class="btn btn-sm btn-outline-${severityClass} event-option-btn" 
+                                        data-event-type="${event.type}" 
+                                        data-option-id="${option.id}"
+                                        data-cost="${option.cost}"
+                                        title="${option.description}">
+                                    ${option.label} ($${option.cost.toLocaleString()})
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
             return `
-                <div class="alert alert-${severityClass} mb-2">
+                <div class="alert alert-${severityClass} mb-3" id="event-${index}">
                     <div class="d-flex justify-content-between align-items-start">
-                        <div>
+                        <div class="flex-grow-1">
                             <strong><i class="fas ${severityIcon} me-2"></i>${event.type}</strong>
-                            <p class="mb-1 small">${event.description}</p>
+                            <p class="mb-2">${event.description}</p>
                             <small class="text-muted">
                                 ${event.effects ? Object.entries(event.effects).map(([key, value]) => 
                                     `${key}: ${value > 0 ? '+' : ''}${value}`
                                 ).join(', ') : ''}
                             </small>
+                            ${optionsHtml}
                         </div>
-                        <small class="text-muted">${new Date(event.timestamp).toLocaleTimeString()}</small>
+                        <small class="text-muted ms-2">${new Date(event.timestamp).toLocaleTimeString()}</small>
                     </div>
                 </div>
             `;
         }).join('');
 
         container.innerHTML = eventsHtml;
+        
+        // Add event listeners for interactive options
+        this.addEventOptionListeners();
+    }
+    
+    addEventOptionListeners() {
+        const optionButtons = document.querySelectorAll('.event-option-btn');
+        optionButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleEventResponse(button);
+            });
+        });
+    }
+    
+    async handleEventResponse(button) {
+        const eventType = button.dataset.eventType;
+        const optionId = button.dataset.optionId;
+        const cost = parseInt(button.dataset.cost);
+        
+        // Check if we have enough budget
+        if (this.festivalData?.festival?.budget < cost) {
+            this.showNotification('Insufficient budget for this action!', 'error');
+            return;
+        }
+        
+        // Disable all buttons for this event to prevent multiple clicks
+        const eventContainer = button.closest('.alert');
+        const allButtons = eventContainer.querySelectorAll('.event-option-btn');
+        allButtons.forEach(btn => btn.disabled = true);
+        
+        try {
+            const response = await fetch(`/api/events/respond/${this.festivalId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    event_type: eventType,
+                    option_id: optionId
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Show success message
+                this.showNotification(result.message, 'success');
+                
+                // Update festival data
+                if (this.festivalData?.festival) {
+                    this.festivalData.festival.budget = result.new_budget;
+                    this.festivalData.festival.reputation = result.new_reputation;
+                }
+                
+                // Update the UI
+                this.updateDashboard(this.festivalData);
+                
+                // Mark event as resolved
+                eventContainer.classList.add('alert-success');
+                eventContainer.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <div>
+                            <strong>Event Resolved</strong>
+                            <p class="mb-0">${result.message}</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove event from the list after a delay
+                setTimeout(() => {
+                    eventContainer.remove();
+                }, 3000);
+                
+            } else {
+                this.showNotification(result.error || 'Failed to respond to event', 'error');
+                // Re-enable buttons
+                allButtons.forEach(btn => btn.disabled = false);
+            }
+            
+        } catch (error) {
+            console.error('Error responding to event:', error);
+            this.showNotification('Error responding to event', 'error');
+            // Re-enable buttons
+            allButtons.forEach(btn => btn.disabled = false);
+        }
     }
 
     updateRiskAssessment(festival) {
@@ -513,6 +622,27 @@ class DashboardManager {
     showAlert(message, type = 'info') {
         // This would integrate with your existing alert system
         console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Add to page
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
     }
 
     initializeCharts() {

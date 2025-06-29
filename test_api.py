@@ -43,6 +43,38 @@ def test_api_endpoint(endpoint, method='GET', data=None):
         print(f"Error testing {endpoint}: {e}")
         return False
 
+def test_interactive_events():
+    """Test the interactive events functionality"""
+    print("Testing Interactive Events...")
+    
+    # Test force generate events
+    print("\n1. Force generating events...")
+    response = requests.post(f'{BASE_URL}/api/events/force_generate/1')
+    if response.status_code == 200:
+        data = response.json()
+        print(f"✅ Generated {data['events_generated']} events")
+        if data['events']:
+            event = data['events'][0]
+            print(f"   Sample event: {event['type']} - {event['description']}")
+            if event.get('interactive_options'):
+                print(f"   Has {len(event['interactive_options'])} interactive options")
+    else:
+        print(f"❌ Failed to generate events: {response.status_code}")
+    
+    # Test event response (if we have events)
+    print("\n2. Testing event response...")
+    response = requests.post(f'{BASE_URL}/api/events/respond/1', json={
+        'event_type': 'Technical Issues',
+        'option_id': 'call_backup'
+    })
+    if response.status_code == 200:
+        data = response.json()
+        print(f"✅ Event response successful: {data['message']}")
+        print(f"   Cost: ${data['cost']}")
+        print(f"   New budget: ${data['new_budget']}")
+    else:
+        print(f"❌ Event response failed: {response.status_code} - {response.text}")
+
 def main():
     """Run API tests"""
     print("Festival Simulator API Test")
@@ -72,4 +104,4 @@ def main():
         print("❌ Some API endpoints are not working. Check the Flask app.")
 
 if __name__ == '__main__':
-    main() 
+    test_interactive_events() 

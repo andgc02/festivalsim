@@ -480,6 +480,105 @@ def force_generate_events(festival_id):
         'events': events
     })
 
+@app.route('/api/events/respond/<int:festival_id>', methods=['POST'])
+def respond_to_event(festival_id):
+    """Handle player response to a dynamic event"""
+    data = request.get_json()
+    event_type = data.get('event_type')
+    option_id = data.get('option_id')
+    
+    if not event_type or not option_id:
+        return jsonify({'success': False, 'error': 'Event type and option ID required'}), 400
+    
+    festival = Festival.query.get_or_404(festival_id)
+    
+    # Get the event data and find the selected option
+    event_data = game_coordinator.event_system.event_types.get(event_type)
+    if not event_data:
+        return jsonify({'success': False, 'error': 'Invalid event type'}), 400
+    
+    # Generate interactive options to find the selected one
+    options = game_coordinator.event_system.generate_interactive_options(event_type, festival, event_data['effects'])
+    selected_option = next((opt for opt in options if opt['id'] == option_id), None)
+    
+    if not selected_option:
+        return jsonify({'success': False, 'error': 'Invalid option ID'}), 400
+    
+    # Check if festival has enough budget
+    if festival.budget < selected_option['cost']:
+        return jsonify({'success': False, 'error': 'Insufficient budget for this action'}), 400
+    
+    # Apply the option effects
+    festival.budget -= selected_option['cost']
+    
+    # Apply reputation and other effects
+    if 'reputation' in selected_option['effects']:
+        festival.reputation = max(0, min(100, festival.reputation + selected_option['effects']['reputation']))
+    
+    # Save changes
+    db.session.commit()
+    
+    # Generate response message
+    response_messages = {
+        'find_replacement': 'Replacement artist found! The show will go on.',
+        'offer_refunds': 'Refunds processed. Attendees appreciate the gesture.',
+        'adjust_schedule': 'Schedule adjusted successfully.',
+        'activate_protocols': 'Emergency protocols activated. Safety measures in place.',
+        'provide_shelter': 'Emergency shelters set up and ready.',
+        'monitor_weather': 'Weather monitoring systems active.',
+        'call_backup': 'Backup technicians called and responding.',
+        'use_backup_equipment': 'Backup equipment deployed successfully.',
+        'adjust_programming': 'Programming adjusted to accommodate issues.',
+        'increase_security': 'Security presence increased immediately.',
+        'implement_protocols': 'Security protocols implemented.',
+        'coordinate_authorities': 'Authorities contacted and coordinating.',
+        'find_backup_vendors': 'Backup vendors secured and ready.',
+        'provide_alternatives': 'Alternative food options provided.',
+        'compensate_attendees': 'Attendees compensated for inconvenience.',
+        'arrange_alternatives': 'Alternative transportation arranged.',
+        'extend_shuttles': 'Shuttle services extended.',
+        'provide_parking': 'Additional parking secured.',
+        'capitalize_moment': 'Moment capitalized! Social media buzz increased.',
+        'social_media': 'Social media content created and shared.',
+        'extend_experience': 'Experience extended with special activities.',
+        'thank_sponsors': 'Sponsors thanked publicly.',
+        'enhance_visibility': 'Sponsor visibility enhanced.',
+        'plan_partnerships': 'Future partnerships planned.',
+        'arrange_stage': 'Special collaboration stage arranged!',
+        'promote_collaboration': 'Collaboration heavily promoted.',
+        'record_performance': 'Performance recorded for future use.',
+        'vip_treatment': 'VIP treatment provided successfully.',
+        'meet_greet': 'Meet and greet arranged.',
+        'document_visit': 'VIP visit documented and shared.',
+        'amplify_content': 'Viral content amplified with promotion.',
+        'engage_audience': 'Audience engagement increased.',
+        'create_more': 'Additional content created.',
+        'emergency_repair': 'Emergency repair team called.',
+        'backup_equipment': 'Backup equipment deployed.',
+        'rent_replacement': 'Replacement equipment rented.',
+        'emergency_delivery': 'Emergency food delivery arranged.',
+        'find_suppliers': 'Local suppliers contacted.',
+        'offer_alternatives': 'Alternative food options provided.',
+        'emergency_services': 'Emergency services contacted.',
+        'evacuate': 'Area evacuated for medical attention.',
+        'medical_support': 'Medical support provided.',
+        'backup_generators': 'Backup generators activated.',
+        'contact_power_company': 'Power company contacted.',
+        'emergency_lighting': 'Emergency lighting implemented.'
+    }
+    
+    response_message = response_messages.get(option_id, 'Action completed successfully.')
+    
+    return jsonify({
+        'success': True,
+        'message': response_message,
+        'cost': selected_option['cost'],
+        'effectiveness': selected_option['effectiveness'],
+        'effects_applied': selected_option['effects'],
+        'new_budget': festival.budget,
+        'new_reputation': festival.reputation
+    })
+
 # Socket.IO event handlers
 @socketio.on('connect')
 def handle_connect():
