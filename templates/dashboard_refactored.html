@@ -1252,6 +1252,12 @@ function forceButtonColors() {
         word-wrap: break-word;
         overflow-wrap: break-word;
         hyphens: auto;
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        padding: 8px !important;
+        display: block !important;
+        overflow: visible !important;
     }
     
     .stats-number {
@@ -1259,7 +1265,13 @@ function forceButtonColors() {
         overflow-wrap: break-word;
         hyphens: auto;
         max-width: 100%;
-        min-height: 2.4rem; /* Ensure minimum height for 2rem font */
+        height: auto !important;
+        min-height: auto !important;
+        font-size: 1.5rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 4px !important;
+        display: block !important;
+        overflow: visible !important;
     }
     
     .stats-label {
@@ -1267,8 +1279,13 @@ function forceButtonColors() {
         overflow-wrap: break-word;
         hyphens: auto;
         max-width: 100%;
-        line-height: 1.2;
-        min-height: 1.2rem;
+        height: auto !important;
+        min-height: auto !important;
+        font-size: 0.8rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0 !important;
+        display: block !important;
+        overflow: visible !important;
     }
     
     /* Card titles and text */
@@ -1383,82 +1400,25 @@ function forceButtonColors() {
         max-width: 200px; /* Prevent extremely wide cells */
     }
     
-    /* Responsive text sizing */
+    /* Responsive text sizing - simplified */
     @media (max-width: 576px) {
         .stats-number {
-            font-size: 1.5rem;
-            min-height: 1.8rem;
+            font-size: 1.2rem !important;
         }
         
         .stats-label {
-            font-size: 0.75rem;
-            min-height: 1rem;
-        }
-        
-        .btn {
-            font-size: 0.875rem;
-            min-height: 2.25rem;
-        }
-        
-        .card-title {
-            font-size: 1.1rem;
-        }
-        
-        .card-text {
-            font-size: 0.9rem;
+            font-size: 0.7rem !important;
         }
     }
     
     @media (max-width: 768px) {
         .stats-number {
-            font-size: 1.75rem;
-            min-height: 2.1rem;
+            font-size: 1.3rem !important;
         }
         
         .stats-label {
-            font-size: 0.8rem;
-            min-height: 1.1rem;
+            font-size: 0.75rem !important;
         }
-    }
-    
-    /* Prevent horizontal scrolling */
-    .container, .container-fluid {
-        overflow-x: hidden;
-    }
-    
-    .row {
-        overflow-x: hidden;
-    }
-    
-    /* Ensure proper spacing for wrapped text */
-    .mb-2, .mb-3, .mb-4 {
-        margin-bottom: 0.5rem !important;
-    }
-    
-    .mt-2, .mt-3, .mt-4 {
-        margin-top: 0.5rem !important;
-    }
-    
-    /* Fix for long words that don't break */
-    .break-words {
-        word-break: break-word;
-        overflow-wrap: break-word;
-        hyphens: auto;
-    }
-    
-    /* Ensure buttons don't overflow their containers */
-    .btn-group .btn {
-        flex: 1;
-        min-width: 0;
-    }
-    
-    /* Fix for flex containers */
-    .d-flex {
-        flex-wrap: wrap;
-    }
-    
-    .flex-grow-1 {
-        min-width: 0;
     }
 </style>
 {% endblock %} 
