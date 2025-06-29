@@ -2,6 +2,7 @@
 {% from "components/stats_card.html" import stats_card %}
 {% from "components/analytics_card.html" import analytics_card, metric_item %}
 {% from "components/sidebar_card.html" import sidebar_card %}
+{% from "components/vendor_management_card.html" import vendor_management_card %}
 
 {% block title %}{{ festival.name }} - Festival Simulator{% endblock %}
 
@@ -229,19 +230,8 @@
             </div>
         </div>
 
-        <!-- Vendor Relationships -->
-        <div class="card mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="fas fa-handshake me-2"></i>Vendor Relationships
-                </h5>
-            </div>
-            <div class="card-body">
-                <div id="vendorRelationshipsContainer">
-                    <p class="text-muted">No vendor relationships to display. Hire more vendors to see relationships!</p>
-                </div>
-            </div>
-        </div>
+        <!-- Advanced Vendor Management -->
+        {{ vendor_management_card(festival.id) }}
     </div>
 
     <!-- Right Column -->
