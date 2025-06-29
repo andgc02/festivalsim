@@ -21,6 +21,32 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Initialize game coordinator
 game_coordinator = GameCoordinator()
 
+# Cache for available artists and vendors to ensure consistency
+available_artists_cache = {}
+available_vendors_cache = {}
+
+def get_cached_artists(count=5):
+    """Get cached available artists, generating new ones if cache is empty"""
+    cache_key = f"artists_{count}"
+    if cache_key not in available_artists_cache:
+        available_artists_cache[cache_key] = game_coordinator.get_available_artists(count)
+    return available_artists_cache[cache_key]
+
+def get_cached_vendors(count=5):
+    """Get cached available vendors, generating new ones if cache is empty"""
+    cache_key = f"vendors_{count}"
+    if cache_key not in available_vendors_cache:
+        available_vendors_cache[cache_key] = game_coordinator.get_available_vendors(count)
+    return available_vendors_cache[cache_key]
+
+def clear_artist_cache():
+    """Clear the artist cache to force regeneration"""
+    available_artists_cache.clear()
+
+def clear_vendor_cache():
+    """Clear the vendor cache to force regeneration"""
+    available_vendors_cache.clear()
+
 @app.route('/')
 def index():
     """Main page - redirect to dashboard or new game"""
@@ -75,6 +101,9 @@ def get_festival_data(festival_id):
     synergies = game_coordinator.artist_system.calculate_genre_synergies(festival_id)
     vendor_relationships = game_coordinator.vendor_system.calculate_vendor_relationships(festival_id)
     
+    # Get dynamic events
+    dynamic_events = game_coordinator.event_system.check_for_dynamic_events(festival)
+    
     # Convert to the structure expected by frontend
     festival_data = {
         'festival': {
@@ -121,7 +150,7 @@ def get_festival_data(festival_id):
             }
         ],
         'marketing': [],
-        'events': [],
+        'events': dynamic_events,  # Add dynamic events to the response
         'synergies': synergies,
         'vendor_relationships': vendor_relationships
     }
@@ -138,7 +167,7 @@ def advance_time(festival_id):
 def get_available_artists():
     """Get available artists for hiring"""
     count = request.args.get('count', 5, type=int)
-    artists = game_coordinator.get_available_artists(count)
+    artists = get_cached_artists(count)
     return jsonify(artists)
 
 @app.route('/api/artists')
@@ -150,7 +179,7 @@ def get_artists():
 def get_available_vendors():
     """Get available vendors for hiring"""
     count = request.args.get('count', 5, type=int)
-    vendors = game_coordinator.get_available_vendors(count)
+    vendors = get_cached_vendors(count)
     return jsonify(vendors)
 
 @app.route('/api/vendors')
@@ -166,33 +195,81 @@ def get_marketing_campaigns():
             'id': 1,
             'name': 'Social Media Blitz',
             'type': 'Social Media',
+            'target_audience': 'Young Adults (18-25)',
             'effectiveness': 1.25,
             'duration_days': 7,
-            'cost': 5000
+            'cost': 5000,
+            'description': 'Target young adults through social media platforms'
         },
         {
             'id': 2,
             'name': 'Radio Advertisement',
             'type': 'Radio',
+            'target_audience': 'Adults (26-40)',
             'effectiveness': 1.15,
             'duration_days': 14,
-            'cost': 8000
+            'cost': 8000,
+            'description': 'Reach adults through radio commercials'
         },
         {
             'id': 3,
             'name': 'Billboard Campaign',
             'type': 'Billboards',
+            'target_audience': 'Families',
             'effectiveness': 1.20,
             'duration_days': 30,
-            'cost': 15000
+            'cost': 15000,
+            'description': 'High-visibility outdoor advertising for families'
         },
         {
             'id': 4,
             'name': 'Influencer Partnership',
             'type': 'Influencer Marketing',
+            'target_audience': 'Music Enthusiasts',
             'effectiveness': 1.35,
             'duration_days': 5,
-            'cost': 12000
+            'cost': 12000,
+            'description': 'Partner with music influencers for maximum engagement'
+        },
+        {
+            'id': 5,
+            'name': 'TV Commercial',
+            'type': 'TV Commercials',
+            'target_audience': 'Families',
+            'effectiveness': 1.40,
+            'duration_days': 21,
+            'cost': 25000,
+            'description': 'High-impact television advertising for broad reach'
+        },
+        {
+            'id': 6,
+            'name': 'Event Marketing',
+            'type': 'Event Marketing',
+            'target_audience': 'Music Enthusiasts',
+            'effectiveness': 1.30,
+            'duration_days': 5,
+            'cost': 10000,
+            'description': 'Pop-up events and street marketing for direct engagement'
+        },
+        {
+            'id': 7,
+            'name': 'Print Media Campaign',
+            'type': 'Print Media',
+            'target_audience': 'Older Adults (41+)',
+            'effectiveness': 1.10,
+            'duration_days': 14,
+            'cost': 6000,
+            'description': 'Newspaper ads and magazines for traditional audiences'
+        },
+        {
+            'id': 8,
+            'name': 'Email Marketing',
+            'type': 'Email Marketing',
+            'target_audience': 'Adults (26-40)',
+            'effectiveness': 1.05,
+            'duration_days': 3,
+            'cost': 2000,
+            'description': 'Cost-effective email campaigns to existing database'
         }
     ]
     return jsonify(campaigns)
@@ -207,14 +284,19 @@ def hire_artist_endpoint():
     if not artist_id:
         return jsonify({'success': False, 'error': 'Artist ID required'}), 400
     
-    # Get the artist data from available artists
-    artists = game_coordinator.get_available_artists(10)
+    # Get the artist data from cached available artists
+    artists = get_cached_artists(10)
     artist = next((a for a in artists if a['id'] == artist_id), None)
     
     if not artist:
         return jsonify({'success': False, 'error': 'Artist not found'}), 404
     
     result = game_coordinator.hire_artist(festival_id, artist)
+    
+    # Clear the cache after hiring to refresh the available artists
+    if result.get('success'):
+        clear_artist_cache()
+    
     return jsonify(result)
 
 @app.route('/api/vendors/hire', methods=['POST'])
@@ -227,14 +309,19 @@ def hire_vendor_endpoint():
     if not vendor_id:
         return jsonify({'success': False, 'error': 'Vendor ID required'}), 400
     
-    # Get the vendor data from available vendors
-    vendors = game_coordinator.get_available_vendors(10)
+    # Get the vendor data from cached available vendors
+    vendors = get_cached_vendors(10)
     vendor = next((v for v in vendors if v['id'] == vendor_id), None)
     
     if not vendor:
         return jsonify({'success': False, 'error': 'Vendor not found'}), 404
     
     result = game_coordinator.hire_vendor(festival_id, vendor)
+    
+    # Clear the cache after hiring to refresh the available vendors
+    if result.get('success'):
+        clear_vendor_cache()
+    
     return jsonify(result)
 
 @app.route('/api/marketing/launch', methods=['POST'])
@@ -254,10 +341,13 @@ def launch_marketing_campaign():
     if not campaign:
         return jsonify({'success': False, 'error': 'Campaign not found'}), 404
     
+    # Use the target audience specified in the campaign data
+    target_audience = campaign.get('target_audience', 'Music Enthusiasts')
+    
     result = game_coordinator.run_marketing_campaign(
         festival_id, 
         campaign['type'], 
-        'general', 
+        target_audience, 
         campaign['cost']
     )
     return jsonify(result)
@@ -353,6 +443,42 @@ def auto_save_festival():
     # In a real application, you might want to save additional data
     # For now, we'll just return success
     return jsonify({'success': True, 'message': 'Auto-save completed'})
+
+@app.route('/api/artists/refresh', methods=['POST'])
+def refresh_artists():
+    """Refresh the available artists cache"""
+    clear_artist_cache()
+    return jsonify({'success': True, 'message': 'Artist cache refreshed'})
+
+@app.route('/api/vendors/refresh', methods=['POST'])
+def refresh_vendors():
+    """Refresh the available vendors cache"""
+    clear_vendor_cache()
+    return jsonify({'success': True, 'message': 'Vendor cache refreshed'})
+
+@app.route('/api/events/force_generate/<int:festival_id>', methods=['POST'])
+def force_generate_events(festival_id):
+    """Force generate dynamic events for testing"""
+    festival = Festival.query.get_or_404(festival_id)
+    
+    # Temporarily increase all event probabilities to 100% for testing
+    original_probabilities = {}
+    for event_type, event_data in game_coordinator.event_system.event_types.items():
+        original_probabilities[event_type] = event_data['probability']
+        event_data['probability'] = 1.0  # 100% chance
+    
+    # Generate events
+    events = game_coordinator.event_system.check_for_dynamic_events(festival)
+    
+    # Restore original probabilities
+    for event_type, probability in original_probabilities.items():
+        game_coordinator.event_system.event_types[event_type]['probability'] = probability
+    
+    return jsonify({
+        'success': True,
+        'events_generated': len(events),
+        'events': events
+    })
 
 # Socket.IO event handlers
 @socketio.on('connect')

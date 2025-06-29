@@ -12,7 +12,7 @@ class EventSystem:
         # Dynamic event types and their effects
         self.event_types = {
             'Artist Cancellation': {
-                'probability': 0.05,
+                'probability': 0.08,
                 'severity': 'high',
                 'description': 'A scheduled artist has cancelled their performance',
                 'effects': {
@@ -23,7 +23,7 @@ class EventSystem:
                 'solutions': ['Find replacement artist', 'Offer refunds', 'Adjust schedule']
             },
             'Weather Emergency': {
-                'probability': 0.08,
+                'probability': 0.12,
                 'severity': 'high',
                 'description': 'Severe weather conditions affecting the festival',
                 'effects': {
@@ -34,7 +34,7 @@ class EventSystem:
                 'solutions': ['Implement safety protocols', 'Provide shelter', 'Reschedule if possible']
             },
             'Technical Issues': {
-                'probability': 0.12,
+                'probability': 0.18,
                 'severity': 'medium',
                 'description': 'Sound system or lighting failures',
                 'effects': {
@@ -45,7 +45,7 @@ class EventSystem:
                 'solutions': ['Call backup technicians', 'Use backup equipment', 'Adjust programming']
             },
             'Security Incident': {
-                'probability': 0.03,
+                'probability': 0.05,
                 'severity': 'high',
                 'description': 'Security breach or safety concern',
                 'effects': {
@@ -56,7 +56,7 @@ class EventSystem:
                 'solutions': ['Increase security presence', 'Implement emergency protocols', 'Coordinate with authorities']
             },
             'Vendor Problems': {
-                'probability': 0.10,
+                'probability': 0.15,
                 'severity': 'low',
                 'description': 'Food vendors experiencing issues',
                 'effects': {
@@ -67,7 +67,7 @@ class EventSystem:
                 'solutions': ['Find backup vendors', 'Provide alternative food options', 'Compensate affected attendees']
             },
             'Transportation Issues': {
-                'probability': 0.07,
+                'probability': 0.10,
                 'severity': 'medium',
                 'description': 'Problems with attendee transportation',
                 'effects': {
@@ -78,7 +78,7 @@ class EventSystem:
                 'solutions': ['Arrange alternative transportation', 'Extend shuttle services', 'Provide parking alternatives']
             },
             'Positive Surprise': {
-                'probability': 0.06,
+                'probability': 0.10,
                 'severity': 'positive',
                 'description': 'Unexpected positive event or celebrity appearance',
                 'effects': {
@@ -89,7 +89,7 @@ class EventSystem:
                 'solutions': ['Capitalize on the moment', 'Share on social media', 'Extend the experience']
             },
             'Sponsor Bonus': {
-                'probability': 0.04,
+                'probability': 0.06,
                 'severity': 'positive',
                 'description': 'Additional sponsor funding or support',
                 'effects': {

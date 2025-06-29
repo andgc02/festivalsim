@@ -511,8 +511,10 @@ async function loadMarketingCampaigns() {
                             <h5 class="card-title">${campaign.name}</h5>
                             <p class="card-text">
                                 <strong>Type:</strong> ${campaign.type.replace('_', ' ').toUpperCase()}<br>
+                                <strong>Target Audience:</strong> ${campaign.target_audience || 'General'}<br>
                                 <strong>Effectiveness:</strong> ${((campaign.effectiveness - 1) * 100).toFixed(0)}% boost<br>
-                                <strong>Duration:</strong> ${campaign.duration_days} days
+                                <strong>Duration:</strong> ${campaign.duration_days} days<br>
+                                <small class="text-muted">${campaign.description || ''}</small>
                             </p>
                         </div>
                         <div class="col-md-4 text-end">

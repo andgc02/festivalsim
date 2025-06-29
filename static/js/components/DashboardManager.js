@@ -281,8 +281,39 @@ class DashboardManager {
         const container = document.getElementById('eventsContainer');
         if (!container) return;
 
-        // For now, show a simple message
-        container.innerHTML = '<p class="text-muted text-center">No events at the moment.</p>';
+        // Get events from festival data
+        const events = this.festivalData?.events || [];
+        
+        if (events.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center">No events at the moment.</p>';
+            return;
+        }
+
+        const eventsHtml = events.map(event => {
+            const severityClass = event.severity === 'positive' ? 'success' : 
+                                event.severity === 'negative' ? 'danger' : 'warning';
+            const severityIcon = event.severity === 'positive' ? 'fa-check-circle' : 
+                               event.severity === 'negative' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+            
+            return `
+                <div class="alert alert-${severityClass} mb-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong><i class="fas ${severityIcon} me-2"></i>${event.type}</strong>
+                            <p class="mb-1 small">${event.description}</p>
+                            <small class="text-muted">
+                                ${event.effects ? Object.entries(event.effects).map(([key, value]) => 
+                                    `${key}: ${value > 0 ? '+' : ''}${value}`
+                                ).join(', ') : ''}
+                            </small>
+                        </div>
+                        <small class="text-muted">${new Date(event.timestamp).toLocaleTimeString()}</small>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = eventsHtml;
     }
 
     updateRiskAssessment(festival) {
