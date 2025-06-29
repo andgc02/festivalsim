@@ -71,6 +71,10 @@ def get_festival_data(festival_id):
     artists = Artist.query.filter_by(festival_id=festival_id).all()
     vendors = Vendor.query.filter_by(festival_id=festival_id).all()
     
+    # Get synergies and relationships
+    synergies = game_coordinator.artist_system.calculate_genre_synergies(festival_id)
+    vendor_relationships = game_coordinator.vendor_system.calculate_vendor_relationships(festival_id)
+    
     # Convert to the structure expected by frontend
     festival_data = {
         'festival': {
@@ -118,8 +122,8 @@ def get_festival_data(festival_id):
         ],
         'marketing': [],
         'events': [],
-        'synergies': [],
-        'vendor_relationships': []
+        'synergies': synergies,
+        'vendor_relationships': vendor_relationships
     }
     
     return jsonify(festival_data)
@@ -161,7 +165,7 @@ def get_marketing_campaigns():
         {
             'id': 1,
             'name': 'Social Media Blitz',
-            'type': 'social_media',
+            'type': 'Social Media',
             'effectiveness': 1.25,
             'duration_days': 7,
             'cost': 5000
@@ -169,7 +173,7 @@ def get_marketing_campaigns():
         {
             'id': 2,
             'name': 'Radio Advertisement',
-            'type': 'radio',
+            'type': 'Radio',
             'effectiveness': 1.15,
             'duration_days': 14,
             'cost': 8000
@@ -177,7 +181,7 @@ def get_marketing_campaigns():
         {
             'id': 3,
             'name': 'Billboard Campaign',
-            'type': 'billboard',
+            'type': 'Billboards',
             'effectiveness': 1.20,
             'duration_days': 30,
             'cost': 15000
@@ -185,7 +189,7 @@ def get_marketing_campaigns():
         {
             'id': 4,
             'name': 'Influencer Partnership',
-            'type': 'influencer',
+            'type': 'Influencer Marketing',
             'effectiveness': 1.35,
             'duration_days': 5,
             'cost': 12000

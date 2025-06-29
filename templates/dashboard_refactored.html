@@ -699,5 +699,81 @@ function hideLoading() {
     // Hide loading indicator
     console.log('Loading complete');
 }
+
+// Pause modal functions
+function confirmNewFestival() {
+    if (confirm('Are you sure you want to start a new festival? This will save your current progress.')) {
+        window.location.href = '/new_game';
+    }
+}
+
+function showStatistics() {
+    // For now, just show an alert. This could be expanded to show detailed statistics
+    alert('Statistics feature coming soon!');
+}
+
+function confirmExit() {
+    if (confirm('Are you sure you want to exit? Your progress will be saved.')) {
+        window.close();
+    }
+}
+
+function exportFestival() {
+    // For now, just show an alert. This could be expanded to export festival data
+    alert('Export feature coming soon!');
+}
+
+function showHelp() {
+    // For now, just show an alert. This could be expanded to show help documentation
+    alert('Help documentation coming soon!');
+}
+
+function showOptions() {
+    // For now, just show an alert. This could be expanded to show game options
+    alert('Game options coming soon!');
+}
+
+function resumeGame() {
+    // Hide the pause modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('pauseModal'));
+    if (modal) {
+        modal.hide();
+    }
+}
+
+function saveOptions() {
+    // Save game options (for now, just show a success message)
+    const modal = bootstrap.Modal.getInstance(document.getElementById('optionsModal'));
+    if (modal) {
+        modal.hide();
+    }
+    showAlert('Options saved successfully!', 'success');
+}
+
+// Modal focus management to fix accessibility warnings
+function setupModalFocusManagement() {
+    // Handle modal focus when opened
+    document.addEventListener('shown.bs.modal', function (event) {
+        const modal = event.target;
+        const firstFocusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (firstFocusable) {
+            firstFocusable.focus();
+        }
+    });
+
+    // Handle modal focus when closed
+    document.addEventListener('hidden.bs.modal', function (event) {
+        // Return focus to the element that opened the modal
+        const triggerElement = document.querySelector('[data-bs-target="#' + event.target.id + '"]');
+        if (triggerElement) {
+            triggerElement.focus();
+        }
+    });
+}
+
+// Initialize modal focus management when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    setupModalFocusManagement();
+});
 </script>
 {% endblock %} 
