@@ -6,7 +6,7 @@
 {% block title %}{{ festival.name }} - Festival Simulator{% endblock %}
 
 {% block content %}
-<div data-festival-id="{{ festival.id }}">
+<div class="dashboard-refactored" data-festival-id="{{ festival.id }}">
 <!-- Festival Header -->
 <div class="row mb-4">
     <div class="col-12">
@@ -54,22 +54,22 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <button class="btn btn-outline-primary w-100" onclick="showArtists()">
+                        <button class="btn btn-outline-primary w-100" onclick="showArtists()" style="background-color: transparent !important; border-color: #0d6efd !important; color: #0d6efd !important;">
                             <i class="fas fa-microphone me-2"></i>Hire Artists
                         </button>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <button class="btn btn-outline-success w-100" onclick="showVendors()">
+                        <button class="btn btn-outline-success w-100" onclick="showVendors()" style="background-color: transparent !important; border-color: #198754 !important; color: #198754 !important;">
                             <i class="fas fa-store me-2"></i>Hire Vendors
                         </button>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <button class="btn btn-outline-warning w-100" onclick="showMarketing()">
+                        <button class="btn btn-outline-warning w-100" onclick="showMarketing()" style="background-color: transparent !important; border-color: #ffc107 !important; color: #ffc107 !important;">
                             <i class="fas fa-bullhorn me-2"></i>Launch Marketing
                         </button>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <button class="btn btn-outline-info w-100" onclick="advanceTime()">
+                        <button class="btn btn-outline-info w-100" onclick="advanceTime()" style="background-color: transparent !important; border-color: #0dcaf0 !important; color: #0dcaf0 !important;">
                             <i class="fas fa-clock me-2"></i>Advance Time
                         </button>
                     </div>
@@ -776,7 +776,69 @@ function setupModalFocusManagement() {
 // Initialize modal focus management when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     setupModalFocusManagement();
+    
+    // Force button colors
+    forceButtonColors();
 });
+
+// Function to force button colors
+function forceButtonColors() {
+    // Force outline button colors
+    const outlineButtons = document.querySelectorAll('.btn-outline-primary, .btn-outline-success, .btn-outline-warning, .btn-outline-info, .btn-outline-secondary, .btn-outline-danger');
+    outlineButtons.forEach(button => {
+        if (button.classList.contains('btn-outline-primary')) {
+            button.style.backgroundColor = 'transparent';
+            button.style.borderColor = '#0d6efd';
+            button.style.color = '#0d6efd';
+        } else if (button.classList.contains('btn-outline-success')) {
+            button.style.backgroundColor = 'transparent';
+            button.style.borderColor = '#198754';
+            button.style.color = '#198754';
+        } else if (button.classList.contains('btn-outline-warning')) {
+            button.style.backgroundColor = 'transparent';
+            button.style.borderColor = '#ffc107';
+            button.style.color = '#ffc107';
+        } else if (button.classList.contains('btn-outline-info')) {
+            button.style.backgroundColor = 'transparent';
+            button.style.borderColor = '#0dcaf0';
+            button.style.color = '#0dcaf0';
+        } else if (button.classList.contains('btn-outline-secondary')) {
+            button.style.backgroundColor = 'transparent';
+            button.style.borderColor = '#6c757d';
+            button.style.color = '#6c757d';
+        } else if (button.classList.contains('btn-outline-danger')) {
+            button.style.backgroundColor = 'transparent';
+            button.style.borderColor = '#dc3545';
+            button.style.color = '#dc3545';
+        }
+    });
+    
+    // Force solid button colors
+    const solidButtons = document.querySelectorAll('.btn-primary, .btn-success, .btn-warning, .btn-info, .btn-danger');
+    solidButtons.forEach(button => {
+        if (button.classList.contains('btn-primary')) {
+            button.style.backgroundColor = '#0d6efd';
+            button.style.borderColor = '#0d6efd';
+            button.style.color = '#fff';
+        } else if (button.classList.contains('btn-success')) {
+            button.style.backgroundColor = '#198754';
+            button.style.borderColor = '#198754';
+            button.style.color = '#fff';
+        } else if (button.classList.contains('btn-warning')) {
+            button.style.backgroundColor = '#ffc107';
+            button.style.borderColor = '#ffc107';
+            button.style.color = '#000';
+        } else if (button.classList.contains('btn-info')) {
+            button.style.backgroundColor = '#0dcaf0';
+            button.style.borderColor = '#0dcaf0';
+            button.style.color = '#000';
+        } else if (button.classList.contains('btn-danger')) {
+            button.style.backgroundColor = '#dc3545';
+            button.style.borderColor = '#dc3545';
+            button.style.color = '#fff';
+        }
+    });
+}
 </script>
 {% endblock %}
 
@@ -791,15 +853,46 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     .stats-card {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        border: none;
-        transition: transform 0.2s;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border-radius: 15px !important;
+        padding: 15px !important;
+        margin-bottom: 20px !important;
+        text-align: center !important;
+        min-height: 100px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        overflow: hidden !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+        border: none !important;
     }
     
-    .stats-card:hover {
-        transform: translateY(-2px);
+    .stats-number {
+        font-size: 2rem !important;
+        font-weight: bold !important;
+        margin-bottom: 5px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        line-height: 1.1 !important;
+        flex-shrink: 0 !important;
+        color: white !important;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+    }
+    
+    .stats-label {
+        font-size: 0.85rem !important;
+        opacity: 0.9 !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        color: white !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+    }
+    
+    .stats-card i {
+        color: white !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
     }
     
     .analytics-card {
@@ -851,6 +944,521 @@ document.addEventListener('DOMContentLoaded', function() {
         top: 20px;
         right: 20px;
         z-index: 9999;
+    }
+    
+    /* Button styling fixes */
+    .btn {
+        color: inherit;
+        border: 1px solid transparent;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+        vertical-align: middle;
+        cursor: pointer;
+        user-select: none;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        border-radius: 0.25rem;
+        transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    
+    .btn-primary {
+        color: #fff;
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    .btn-primary:hover {
+        color: #fff;
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+    }
+    
+    .btn-success {
+        color: #fff;
+        background-color: #198754;
+        border-color: #198754;
+    }
+    
+    .btn-success:hover {
+        color: #fff;
+        background-color: #157347;
+        border-color: #146c43;
+    }
+    
+    .btn-warning {
+        color: #000;
+        background-color: #ffc107;
+        border-color: #ffc107;
+    }
+    
+    .btn-warning:hover {
+        color: #000;
+        background-color: #ffca2c;
+        border-color: #ffc720;
+    }
+    
+    .btn-info {
+        color: #000;
+        background-color: #0dcaf0;
+        border-color: #0dcaf0;
+    }
+    
+    .btn-info:hover {
+        color: #000;
+        background-color: #31d2f2;
+        border-color: #25cff2;
+    }
+    
+    .btn-outline-primary {
+        color: #0d6efd;
+        border-color: #0d6efd;
+        background-color: transparent;
+    }
+    
+    .btn-outline-primary:hover {
+        color: #fff;
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    .btn-outline-success {
+        color: #198754;
+        border-color: #198754;
+        background-color: transparent;
+    }
+    
+    .btn-outline-success:hover {
+        color: #fff;
+        background-color: #198754;
+        border-color: #198754;
+    }
+    
+    .btn-outline-warning {
+        color: #ffc107;
+        border-color: #ffc107;
+        background-color: transparent;
+    }
+    
+    .btn-outline-warning:hover {
+        color: #000;
+        background-color: #ffc107;
+        border-color: #ffc107;
+    }
+    
+    .btn-outline-info {
+        color: #0dcaf0;
+        border-color: #0dcaf0;
+        background-color: transparent;
+    }
+    
+    .btn-outline-info:hover {
+        color: #000;
+        background-color: #0dcaf0;
+        border-color: #0dcaf0;
+    }
+    
+    .btn-outline-secondary {
+        color: #6c757d;
+        border-color: #6c757d;
+        background-color: transparent;
+    }
+    
+    .btn-outline-secondary:hover {
+        color: #fff;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+    
+    .btn-outline-danger {
+        color: #dc3545;
+        border-color: #dc3545;
+        background-color: transparent;
+    }
+    
+    .btn-outline-danger:hover {
+        color: #fff;
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        border-radius: 0.2rem;
+    }
+    
+    .btn-close {
+        box-sizing: content-box;
+        width: 1em;
+        height: 1em;
+        padding: 0.25em 0.25em;
+        color: #000;
+        background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+        border: 0;
+        border-radius: 0.25rem;
+        opacity: 0.5;
+    }
+    
+    .btn-close:hover {
+        color: #000;
+        text-decoration: none;
+        opacity: 0.75;
+    }
+    
+    /* Ensure text is visible in cards */
+    .card {
+        background-color: #fff;
+        color: #212529;
+    }
+    
+    .card-body {
+        color: #212529;
+    }
+    
+    .card-title {
+        color: #212529;
+    }
+    
+    .card-text {
+        color: #212529;
+    }
+    
+    /* Ensure modals have proper styling */
+    .modal-content {
+        background-color: #fff;
+        color: #212529;
+    }
+    
+    .modal-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .modal-body {
+        background-color: #fff;
+        color: #212529;
+    }
+    
+    .modal-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    /* Completely reset and override base template button styles */
+    .dashboard-refactored .btn {
+        background: none !important;
+        background-image: none !important;
+        background-color: transparent !important;
+        border: 1px solid !important;
+        border-radius: 0.25rem !important;
+        color: inherit !important;
+        text-shadow: none !important;
+        box-shadow: none !important;
+        transform: none !important;
+        font-weight: 500 !important;
+        padding: 0.375rem 0.75rem !important;
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
+        transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+    }
+    
+    /* Remove any gradient backgrounds */
+    .dashboard-refactored .btn::before,
+    .dashboard-refactored .btn::after {
+        display: none !important;
+    }
+    
+    /* Force specific colors for each button type */
+    .dashboard-refactored .btn-primary {
+        background-color: #0d6efd !important;
+        border-color: #0d6efd !important;
+        color: #fff !important;
+    }
+    
+    .dashboard-refactored .btn-success {
+        background-color: #198754 !important;
+        border-color: #198754 !important;
+        color: #fff !important;
+    }
+    
+    .dashboard-refactored .btn-warning {
+        background-color: #ffc107 !important;
+        border-color: #ffc107 !important;
+        color: #000 !important;
+    }
+    
+    .dashboard-refactored .btn-info {
+        background-color: #0dcaf0 !important;
+        border-color: #0dcaf0 !important;
+        color: #000 !important;
+    }
+    
+    .dashboard-refactored .btn-outline-primary {
+        background-color: transparent !important;
+        border-color: #0d6efd !important;
+        color: #0d6efd !important;
+    }
+    
+    .dashboard-refactored .btn-outline-success {
+        background-color: transparent !important;
+        border-color: #198754 !important;
+        color: #198754 !important;
+    }
+    
+    .dashboard-refactored .btn-outline-warning {
+        background-color: transparent !important;
+        border-color: #ffc107 !important;
+        color: #ffc107 !important;
+    }
+    
+    .dashboard-refactored .btn-outline-info {
+        background-color: transparent !important;
+        border-color: #0dcaf0 !important;
+        color: #0dcaf0 !important;
+    }
+    
+    .dashboard-refactored .btn-outline-secondary {
+        background-color: transparent !important;
+        border-color: #6c757d !important;
+        color: #6c757d !important;
+    }
+    
+    .dashboard-refactored .btn-outline-danger {
+        background-color: transparent !important;
+        border-color: #dc3545 !important;
+        color: #dc3545 !important;
+    }
+    
+    /* Ensure stats card icons are visible */
+    .stats-card i {
+        color: white !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+    }
+    
+    /* Fix text overflow and cutoff issues throughout the UI */
+    
+    /* General text overflow handling */
+    .text-overflow-ellipsis {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Stats cards - prevent text cutoff */
+    .stats-card {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+    
+    .stats-number {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+        min-height: 2.4rem; /* Ensure minimum height for 2rem font */
+    }
+    
+    .stats-label {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+        line-height: 1.2;
+        min-height: 1.2rem;
+    }
+    
+    /* Card titles and text */
+    .card-title {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.3;
+        max-width: 100%;
+    }
+    
+    .card-text {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.5;
+        max-width: 100%;
+    }
+    
+    /* Button text handling */
+    .btn {
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.2;
+        min-height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+    
+    .btn-sm {
+        min-height: 2rem;
+        font-size: 0.875rem;
+        line-height: 1.1;
+    }
+    
+    /* Modal content text handling */
+    .modal-title {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.3;
+        max-width: 100%;
+    }
+    
+    .modal-body {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.5;
+    }
+    
+    /* List items and navigation */
+    .nav-link {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        white-space: normal;
+        line-height: 1.3;
+    }
+    
+    .list-group-item {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.4;
+    }
+    
+    /* Form elements */
+    .form-label {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.3;
+        max-width: 100%;
+    }
+    
+    .form-control {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.5;
+    }
+    
+    /* Badge and small elements */
+    .badge {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        white-space: normal;
+        line-height: 1.2;
+        max-width: 100%;
+    }
+    
+    /* Alert messages */
+    .alert {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.5;
+    }
+    
+    /* Table cells */
+    .table td, .table th {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.4;
+        max-width: 200px; /* Prevent extremely wide cells */
+    }
+    
+    /* Responsive text sizing */
+    @media (max-width: 576px) {
+        .stats-number {
+            font-size: 1.5rem;
+            min-height: 1.8rem;
+        }
+        
+        .stats-label {
+            font-size: 0.75rem;
+            min-height: 1rem;
+        }
+        
+        .btn {
+            font-size: 0.875rem;
+            min-height: 2.25rem;
+        }
+        
+        .card-title {
+            font-size: 1.1rem;
+        }
+        
+        .card-text {
+            font-size: 0.9rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .stats-number {
+            font-size: 1.75rem;
+            min-height: 2.1rem;
+        }
+        
+        .stats-label {
+            font-size: 0.8rem;
+            min-height: 1.1rem;
+        }
+    }
+    
+    /* Prevent horizontal scrolling */
+    .container, .container-fluid {
+        overflow-x: hidden;
+    }
+    
+    .row {
+        overflow-x: hidden;
+    }
+    
+    /* Ensure proper spacing for wrapped text */
+    .mb-2, .mb-3, .mb-4 {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .mt-2, .mt-3, .mt-4 {
+        margin-top: 0.5rem !important;
+    }
+    
+    /* Fix for long words that don't break */
+    .break-words {
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+    
+    /* Ensure buttons don't overflow their containers */
+    .btn-group .btn {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    /* Fix for flex containers */
+    .d-flex {
+        flex-wrap: wrap;
+    }
+    
+    .flex-grow-1 {
+        min-width: 0;
     }
 </style>
 {% endblock %} 

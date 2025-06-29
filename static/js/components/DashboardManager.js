@@ -823,4 +823,10 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = DashboardManager;
 } else {
     window.DashboardManager = DashboardManager;
+}
+
+// Initialize dashboard manager - this will be called by the template
+function initializeDashboard(festivalId) {
+    window.dashboardManager = new DashboardManager(festivalId);
+    return window.dashboardManager;
 } 
