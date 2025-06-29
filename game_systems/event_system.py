@@ -3,7 +3,7 @@ Event System - Handles all event-related game logic
 """
 import random
 from datetime import datetime, timedelta
-from models import db, Festival
+from models import db, Festival, Artist, Vendor
 
 class EventSystem:
     """Handles dynamic events, weather, and crisis management"""
@@ -12,7 +12,7 @@ class EventSystem:
         # Dynamic event types and their effects
         self.event_types = {
             'Artist Cancellation': {
-                'probability': 0.05,
+                'probability': 0.08,
                 'severity': 'high',
                 'description': 'A scheduled artist has cancelled their performance',
                 'effects': {
@@ -23,7 +23,7 @@ class EventSystem:
                 'solutions': ['Find replacement artist', 'Offer refunds', 'Adjust schedule']
             },
             'Weather Emergency': {
-                'probability': 0.08,
+                'probability': 0.12,
                 'severity': 'high',
                 'description': 'Severe weather conditions affecting the festival',
                 'effects': {
@@ -34,7 +34,7 @@ class EventSystem:
                 'solutions': ['Implement safety protocols', 'Provide shelter', 'Reschedule if possible']
             },
             'Technical Issues': {
-                'probability': 0.12,
+                'probability': 0.18,
                 'severity': 'medium',
                 'description': 'Sound system or lighting failures',
                 'effects': {
@@ -45,7 +45,7 @@ class EventSystem:
                 'solutions': ['Call backup technicians', 'Use backup equipment', 'Adjust programming']
             },
             'Security Incident': {
-                'probability': 0.03,
+                'probability': 0.05,
                 'severity': 'high',
                 'description': 'Security breach or safety concern',
                 'effects': {
@@ -56,7 +56,7 @@ class EventSystem:
                 'solutions': ['Increase security presence', 'Implement emergency protocols', 'Coordinate with authorities']
             },
             'Vendor Problems': {
-                'probability': 0.10,
+                'probability': 0.15,
                 'severity': 'low',
                 'description': 'Food vendors experiencing issues',
                 'effects': {
@@ -67,7 +67,7 @@ class EventSystem:
                 'solutions': ['Find backup vendors', 'Provide alternative food options', 'Compensate affected attendees']
             },
             'Transportation Issues': {
-                'probability': 0.07,
+                'probability': 0.10,
                 'severity': 'medium',
                 'description': 'Problems with attendee transportation',
                 'effects': {
@@ -78,7 +78,7 @@ class EventSystem:
                 'solutions': ['Arrange alternative transportation', 'Extend shuttle services', 'Provide parking alternatives']
             },
             'Positive Surprise': {
-                'probability': 0.06,
+                'probability': 0.10,
                 'severity': 'positive',
                 'description': 'Unexpected positive event or celebrity appearance',
                 'effects': {
@@ -89,7 +89,7 @@ class EventSystem:
                 'solutions': ['Capitalize on the moment', 'Share on social media', 'Extend the experience']
             },
             'Sponsor Bonus': {
-                'probability': 0.04,
+                'probability': 0.06,
                 'severity': 'positive',
                 'description': 'Additional sponsor funding or support',
                 'effects': {
@@ -98,6 +98,83 @@ class EventSystem:
                     'budget': 8000
                 },
                 'solutions': ['Thank sponsors publicly', 'Enhance sponsor visibility', 'Plan future partnerships']
+            },
+            'Artist Collaboration': {
+                'probability': 0.08,
+                'severity': 'positive',
+                'description': 'Two artists want to perform together',
+                'effects': {
+                    'reputation': 10,
+                    'attendance': 0.15,
+                    'budget': 3000
+                },
+                'solutions': ['Arrange special stage', 'Promote collaboration', 'Record the performance']
+            },
+            'VIP Guest Arrival': {
+                'probability': 0.05,
+                'severity': 'positive',
+                'description': 'Celebrity or VIP guest arrives unexpectedly',
+                'effects': {
+                    'reputation': 12,
+                    'attendance': 0.08,
+                    'budget': 1000
+                },
+                'solutions': ['Provide VIP treatment', 'Arrange meet and greet', 'Document the visit']
+            },
+            'Social Media Viral': {
+                'probability': 0.07,
+                'severity': 'positive',
+                'description': 'Festival content goes viral on social media',
+                'effects': {
+                    'reputation': 8,
+                    'attendance': 0.12,
+                    'budget': 2000
+                },
+                'solutions': ['Amplify the content', 'Engage with audience', 'Create more content']
+            },
+            'Equipment Failure': {
+                'probability': 0.09,
+                'severity': 'medium',
+                'description': 'Critical equipment breaks down',
+                'effects': {
+                    'reputation': -6,
+                    'attendance': -0.08,
+                    'budget': -4000
+                },
+                'solutions': ['Call emergency repair', 'Use backup equipment', 'Rent replacement gear']
+            },
+            'Food Shortage': {
+                'probability': 0.06,
+                'severity': 'medium',
+                'description': 'Vendors running out of food supplies',
+                'effects': {
+                    'reputation': -4,
+                    'attendance': -0.05,
+                    'budget': -2000
+                },
+                'solutions': ['Emergency food delivery', 'Find local suppliers', 'Offer alternatives']
+            },
+            'Medical Emergency': {
+                'probability': 0.04,
+                'severity': 'high',
+                'description': 'Serious medical incident requiring attention',
+                'effects': {
+                    'reputation': -8,
+                    'attendance': -0.10,
+                    'budget': -3000
+                },
+                'solutions': ['Call emergency services', 'Evacuate if necessary', 'Provide medical support']
+            },
+            'Power Outage': {
+                'probability': 0.05,
+                'severity': 'high',
+                'description': 'Complete power failure affecting the festival',
+                'effects': {
+                    'reputation': -12,
+                    'attendance': -0.20,
+                    'budget': -6000
+                },
+                'solutions': ['Activate backup generators', 'Contact power company', 'Implement emergency lighting']
             }
         }
         
@@ -199,6 +276,10 @@ class EventSystem:
         """Check if any dynamic events should occur"""
         events = []
         
+        # Get festival-specific data for more dynamic events
+        artists = Artist.query.filter_by(festival_id=festival.id).all()
+        vendors = Vendor.query.filter_by(festival_id=festival.id).all()
+        
         for event_type, event_data in self.event_types.items():
             # Check probability based on festival state
             base_probability = event_data['probability']
@@ -215,12 +296,12 @@ class EventSystem:
             
             # Random check
             if random.random() < base_probability:
-                events.append(self.create_dynamic_event(event_type, festival))
+                events.append(self.create_dynamic_event(event_type, festival, artists, vendors))
         
         return events
     
-    def create_dynamic_event(self, event_type, festival):
-        """Create a specific dynamic event"""
+    def create_dynamic_event(self, event_type, festival, artists=None, vendors=None):
+        """Create a specific dynamic event with contextual details"""
         event_data = self.event_types[event_type]
         
         # Calculate effects based on festival state
@@ -232,15 +313,537 @@ class EventSystem:
             if key != 'reputation':
                 effects[key] *= scale_factor
         
+        # Generate contextual description based on event type
+        description = self.generate_contextual_description(event_type, festival, artists, vendors)
+        
+        # Generate interactive options
+        interactive_options = self.generate_interactive_options(event_type, festival, effects)
+        
         return {
             'type': event_type,
             'severity': event_data['severity'],
-            'description': event_data['description'],
+            'description': description,
             'effects': effects,
             'solutions': event_data['solutions'],
+            'interactive_options': interactive_options,
             'timestamp': datetime.now(),
-            'resolved': False
+            'resolved': False,
+            'requires_action': True
         }
+    
+    def generate_contextual_description(self, event_type, festival, artists, vendors):
+        """Generate contextual description with specific names and details"""
+        if event_type == 'Artist Cancellation' and artists:
+            artist = random.choice(artists)
+            return f"🚨 {artist.name} has just cancelled their performance! The {artist.genre} artist cited scheduling conflicts. This could significantly impact attendance and reputation."
+        
+        elif event_type == 'Weather Emergency':
+            weather_conditions = ['thunderstorm', 'heavy rain', 'strong winds', 'heat wave', 'cold front']
+            condition = random.choice(weather_conditions)
+            return f"🌩️ Severe {condition} is approaching the festival grounds! Weather reports indicate this could affect the entire event. Safety protocols may need to be activated."
+        
+        elif event_type == 'Technical Issues':
+            technical_problems = ['sound system failure', 'lighting malfunction', 'stage collapse risk', 'power outage', 'audio feedback issues']
+            problem = random.choice(technical_problems)
+            return f"🔧 Critical {problem} detected! The technical team is scrambling to resolve this before it affects performances."
+        
+        elif event_type == 'Security Incident':
+            security_issues = ['unauthorized access attempt', 'suspicious package found', 'crowd control issue', 'medical emergency', 'lost child report']
+            issue = random.choice(security_issues)
+            return f"🚨 Security alert: {issue} reported on festival grounds. Security personnel are responding immediately."
+        
+        elif event_type == 'Vendor Problems' and vendors:
+            vendor = random.choice(vendors)
+            vendor_issues = ['food safety concern', 'equipment malfunction', 'staff shortage', 'supply delivery delay', 'payment dispute']
+            issue = random.choice(vendor_issues)
+            return f"🍔 {vendor.name} ({vendor.specialty}) is experiencing {issue}. This could affect food service and attendee satisfaction."
+        
+        elif event_type == 'Transportation Issues':
+            transport_problems = ['shuttle bus breakdown', 'parking lot flooding', 'traffic gridlock', 'public transport delays', 'ride-share shortage']
+            problem = random.choice(transport_problems)
+            return f"🚌 {problem} is causing major delays for attendees trying to reach the festival. Alternative solutions are needed urgently."
+        
+        elif event_type == 'Positive Surprise' and artists:
+            artist = random.choice(artists)
+            surprises = [
+                f"🎉 {artist.name} just announced they'll perform an extra set!",
+                f"🌟 A surprise guest appearance by {artist.name} has been confirmed!",
+                f"🎵 {artist.name} wants to collaborate with another artist for a special performance!"
+            ]
+            return random.choice(surprises)
+        
+        elif event_type == 'Sponsor Bonus':
+            sponsor_actions = [
+                "Major sponsor has increased funding for the festival!",
+                "New sponsor partnership announced with exclusive benefits!",
+                "Sponsor is providing additional resources and support!"
+            ]
+            return f"💰 {random.choice(sponsor_actions)}"
+        
+        elif event_type == 'Artist Collaboration' and artists and len(artists) >= 2:
+            artist1, artist2 = random.sample(artists, 2)
+            collaboration_types = [
+                f"🎵 {artist1.name} and {artist2.name} want to perform a duet together!",
+                f"🎶 {artist1.name} has invited {artist2.name} for a special collaboration!",
+                f"🎤 {artist1.name} and {artist2.name} are planning a surprise joint performance!"
+            ]
+            return random.choice(collaboration_types)
+        
+        elif event_type == 'VIP Guest Arrival':
+            vip_types = ['celebrity', 'music industry executive', 'famous influencer', 'local politician', 'sports star']
+            vip_type = random.choice(vip_types)
+            return f"🌟 A {vip_type} has arrived at the festival! This could be a great opportunity for publicity and networking."
+        
+        elif event_type == 'Social Media Viral':
+            viral_content = ['amazing performance video', 'crowd reaction footage', 'behind-the-scenes moment', 'artist interaction', 'festival atmosphere']
+            content = random.choice(viral_content)
+            return f"📱 Your {content} has gone viral on social media! The festival is trending worldwide."
+        
+        elif event_type == 'Equipment Failure':
+            equipment_types = ['sound system', 'lighting rig', 'stage equipment', 'video screens', 'special effects']
+            equipment = random.choice(equipment_types)
+            return f"🔧 Critical {equipment} failure detected! The technical team is working to resolve this immediately."
+        
+        elif event_type == 'Food Shortage' and vendors:
+            vendor = random.choice(vendors)
+            return f"🍔 {vendor.name} is running critically low on food supplies! Attendees are getting hungry and frustrated."
+        
+        elif event_type == 'Medical Emergency':
+            medical_issues = ['heat exhaustion', 'dehydration', 'minor injury', 'allergic reaction', 'panic attack']
+            issue = random.choice(medical_issues)
+            return f"🚑 Medical emergency: {issue} reported in the crowd. Medical staff are responding immediately."
+        
+        elif event_type == 'Power Outage':
+            return f"⚡ Complete power failure has affected the entire festival grounds! Performances are halted and safety systems are compromised."
+        
+        # Fallback to generic description
+        return event_data['description']
+    
+    def generate_interactive_options(self, event_type, festival, effects):
+        """Generate interactive response options for events"""
+        options = []
+        
+        if event_type == 'Artist Cancellation':
+            options = [
+                {
+                    'id': 'find_replacement',
+                    'label': 'Find Replacement Artist',
+                    'description': 'Search for a backup artist (Cost: $3,000)',
+                    'cost': 3000,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 5, 'budget': -3000}
+                },
+                {
+                    'id': 'offer_refunds',
+                    'label': 'Offer Partial Refunds',
+                    'description': 'Compensate disappointed attendees (Cost: $2,000)',
+                    'cost': 2000,
+                    'effectiveness': 0.6,
+                    'effects': {'reputation': 3, 'budget': -2000}
+                },
+                {
+                    'id': 'adjust_schedule',
+                    'label': 'Adjust Schedule',
+                    'description': 'Reorganize remaining performances (Cost: $500)',
+                    'cost': 500,
+                    'effectiveness': 0.4,
+                    'effects': {'reputation': 1, 'budget': -500}
+                }
+            ]
+        
+        elif event_type == 'Weather Emergency':
+            options = [
+                {
+                    'id': 'activate_protocols',
+                    'label': 'Activate Emergency Protocols',
+                    'description': 'Implement full safety measures (Cost: $5,000)',
+                    'cost': 5000,
+                    'effectiveness': 0.9,
+                    'effects': {'reputation': 8, 'budget': -5000}
+                },
+                {
+                    'id': 'provide_shelter',
+                    'label': 'Provide Emergency Shelter',
+                    'description': 'Set up temporary shelters (Cost: $3,000)',
+                    'cost': 3000,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 5, 'budget': -3000}
+                },
+                {
+                    'id': 'monitor_weather',
+                    'label': 'Monitor Weather Closely',
+                    'description': 'Track conditions and prepare (Cost: $1,000)',
+                    'cost': 1000,
+                    'effectiveness': 0.5,
+                    'effects': {'reputation': 2, 'budget': -1000}
+                }
+            ]
+        
+        elif event_type == 'Technical Issues':
+            options = [
+                {
+                    'id': 'call_backup',
+                    'label': 'Call Backup Technicians',
+                    'description': 'Bring in emergency technical support (Cost: $2,500)',
+                    'cost': 2500,
+                    'effectiveness': 0.85,
+                    'effects': {'reputation': 4, 'budget': -2500}
+                },
+                {
+                    'id': 'use_backup_equipment',
+                    'label': 'Use Backup Equipment',
+                    'description': 'Deploy reserve sound/lighting systems (Cost: $1,500)',
+                    'cost': 1500,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 3, 'budget': -1500}
+                },
+                {
+                    'id': 'adjust_programming',
+                    'label': 'Adjust Programming',
+                    'description': 'Modify schedule to accommodate issues (Cost: $500)',
+                    'cost': 500,
+                    'effectiveness': 0.4,
+                    'effects': {'reputation': 1, 'budget': -500}
+                }
+            ]
+        
+        elif event_type == 'Security Incident':
+            options = [
+                {
+                    'id': 'increase_security',
+                    'label': 'Increase Security Presence',
+                    'description': 'Deploy additional security personnel (Cost: $4,000)',
+                    'cost': 4000,
+                    'effectiveness': 0.9,
+                    'effects': {'reputation': 6, 'budget': -4000}
+                },
+                {
+                    'id': 'implement_protocols',
+                    'label': 'Implement Emergency Protocols',
+                    'description': 'Activate full security protocols (Cost: $2,500)',
+                    'cost': 2500,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 4, 'budget': -2500}
+                },
+                {
+                    'id': 'coordinate_authorities',
+                    'label': 'Coordinate with Authorities',
+                    'description': 'Work with local law enforcement (Cost: $1,500)',
+                    'cost': 1500,
+                    'effectiveness': 0.6,
+                    'effects': {'reputation': 3, 'budget': -1500}
+                }
+            ]
+        
+        elif event_type == 'Vendor Problems':
+            options = [
+                {
+                    'id': 'find_backup_vendors',
+                    'label': 'Find Backup Vendors',
+                    'description': 'Secure alternative food vendors (Cost: $2,000)',
+                    'cost': 2000,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 3, 'budget': -2000}
+                },
+                {
+                    'id': 'provide_alternatives',
+                    'label': 'Provide Alternative Options',
+                    'description': 'Offer different food choices (Cost: $1,000)',
+                    'cost': 1000,
+                    'effectiveness': 0.6,
+                    'effects': {'reputation': 2, 'budget': -1000}
+                },
+                {
+                    'id': 'compensate_attendees',
+                    'label': 'Compensate Affected Attendees',
+                    'description': 'Provide vouchers or refunds (Cost: $500)',
+                    'cost': 500,
+                    'effectiveness': 0.4,
+                    'effects': {'reputation': 1, 'budget': -500}
+                }
+            ]
+        
+        elif event_type == 'Transportation Issues':
+            options = [
+                {
+                    'id': 'arrange_alternatives',
+                    'label': 'Arrange Alternative Transportation',
+                    'description': 'Provide additional shuttle services (Cost: $3,000)',
+                    'cost': 3000,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 5, 'budget': -3000}
+                },
+                {
+                    'id': 'extend_shuttles',
+                    'label': 'Extend Shuttle Services',
+                    'description': 'Increase frequency and hours (Cost: $2,000)',
+                    'cost': 2000,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 4, 'budget': -2000}
+                },
+                {
+                    'id': 'provide_parking',
+                    'label': 'Provide Parking Alternatives',
+                    'description': 'Secure additional parking spaces (Cost: $1,500)',
+                    'cost': 1500,
+                    'effectiveness': 0.5,
+                    'effects': {'reputation': 2, 'budget': -1500}
+                }
+            ]
+        
+        elif event_type == 'Positive Surprise':
+            options = [
+                {
+                    'id': 'capitalize_moment',
+                    'label': 'Capitalize on the Moment',
+                    'description': 'Promote the surprise extensively (Cost: $1,000)',
+                    'cost': 1000,
+                    'effectiveness': 0.9,
+                    'effects': {'reputation': 10, 'budget': -1000}
+                },
+                {
+                    'id': 'social_media',
+                    'label': 'Share on Social Media',
+                    'description': 'Create viral social media content (Cost: $500)',
+                    'cost': 500,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 8, 'budget': -500}
+                },
+                {
+                    'id': 'extend_experience',
+                    'label': 'Extend the Experience',
+                    'description': 'Add special activities around the surprise (Cost: $2,000)',
+                    'cost': 2000,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 6, 'budget': -2000}
+                }
+            ]
+        
+        elif event_type == 'Sponsor Bonus':
+            options = [
+                {
+                    'id': 'thank_sponsors',
+                    'label': 'Thank Sponsors Publicly',
+                    'description': 'Show appreciation through public recognition (Cost: $500)',
+                    'cost': 500,
+                    'effectiveness': 0.9,
+                    'effects': {'reputation': 8, 'budget': -500}
+                },
+                {
+                    'id': 'enhance_visibility',
+                    'label': 'Enhance Sponsor Visibility',
+                    'description': 'Increase sponsor presence at the festival (Cost: $1,000)',
+                    'cost': 1000,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 6, 'budget': -1000}
+                },
+                {
+                    'id': 'plan_partnerships',
+                    'label': 'Plan Future Partnerships',
+                    'description': 'Develop long-term sponsor relationships (Cost: $2,000)',
+                    'cost': 2000,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 5, 'budget': -2000}
+                }
+            ]
+        
+        elif event_type == 'Artist Collaboration':
+            options = [
+                {
+                    'id': 'arrange_stage',
+                    'label': 'Arrange Special Stage',
+                    'description': 'Set up dedicated collaboration area (Cost: $2,000)',
+                    'cost': 2000,
+                    'effectiveness': 0.9,
+                    'effects': {'reputation': 12, 'budget': -2000}
+                },
+                {
+                    'id': 'promote_collaboration',
+                    'label': 'Promote Collaboration',
+                    'description': 'Heavily market the special performance (Cost: $1,500)',
+                    'cost': 1500,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 10, 'budget': -1500}
+                },
+                {
+                    'id': 'record_performance',
+                    'label': 'Record the Performance',
+                    'description': 'Capture the collaboration for future use (Cost: $1,000)',
+                    'cost': 1000,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 8, 'budget': -1000}
+                }
+            ]
+        
+        elif event_type == 'VIP Guest Arrival':
+            options = [
+                {
+                    'id': 'vip_treatment',
+                    'label': 'Provide VIP Treatment',
+                    'description': 'Give exclusive access and amenities (Cost: $1,500)',
+                    'cost': 1500,
+                    'effectiveness': 0.9,
+                    'effects': {'reputation': 15, 'budget': -1500}
+                },
+                {
+                    'id': 'meet_greet',
+                    'label': 'Arrange Meet and Greet',
+                    'description': 'Organize fan interactions (Cost: $1,000)',
+                    'cost': 1000,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 12, 'budget': -1000}
+                },
+                {
+                    'id': 'document_visit',
+                    'label': 'Document the Visit',
+                    'description': 'Create content around the VIP visit (Cost: $500)',
+                    'cost': 500,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 10, 'budget': -500}
+                }
+            ]
+        
+        elif event_type == 'Social Media Viral':
+            options = [
+                {
+                    'id': 'amplify_content',
+                    'label': 'Amplify the Content',
+                    'description': 'Boost the viral content with paid promotion (Cost: $2,000)',
+                    'cost': 2000,
+                    'effectiveness': 0.9,
+                    'effects': {'reputation': 12, 'budget': -2000}
+                },
+                {
+                    'id': 'engage_audience',
+                    'label': 'Engage with Audience',
+                    'description': 'Respond to comments and create more content (Cost: $1,000)',
+                    'cost': 1000,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 10, 'budget': -1000}
+                },
+                {
+                    'id': 'create_more',
+                    'label': 'Create More Content',
+                    'description': 'Produce additional viral-worthy content (Cost: $1,500)',
+                    'cost': 1500,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 8, 'budget': -1500}
+                }
+            ]
+        
+        elif event_type == 'Equipment Failure':
+            options = [
+                {
+                    'id': 'emergency_repair',
+                    'label': 'Call Emergency Repair',
+                    'description': 'Bring in specialized technicians (Cost: $3,000)',
+                    'cost': 3000,
+                    'effectiveness': 0.9,
+                    'effects': {'reputation': 4, 'budget': -3000}
+                },
+                {
+                    'id': 'backup_equipment',
+                    'label': 'Use Backup Equipment',
+                    'description': 'Deploy reserve systems (Cost: $2,000)',
+                    'cost': 2000,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 3, 'budget': -2000}
+                },
+                {
+                    'id': 'rent_replacement',
+                    'label': 'Rent Replacement Gear',
+                    'description': 'Quick rental of replacement equipment (Cost: $2,500)',
+                    'cost': 2500,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 2, 'budget': -2500}
+                }
+            ]
+        
+        elif event_type == 'Food Shortage':
+            options = [
+                {
+                    'id': 'emergency_delivery',
+                    'label': 'Emergency Food Delivery',
+                    'description': 'Rush order from local suppliers (Cost: $2,500)',
+                    'cost': 2500,
+                    'effectiveness': 0.9,
+                    'effects': {'reputation': 3, 'budget': -2500}
+                },
+                {
+                    'id': 'find_suppliers',
+                    'label': 'Find Local Suppliers',
+                    'description': 'Source food from nearby vendors (Cost: $1,500)',
+                    'cost': 1500,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 2, 'budget': -1500}
+                },
+                {
+                    'id': 'offer_alternatives',
+                    'label': 'Offer Alternatives',
+                    'description': 'Provide different food options (Cost: $1,000)',
+                    'cost': 1000,
+                    'effectiveness': 0.5,
+                    'effects': {'reputation': 1, 'budget': -1000}
+                }
+            ]
+        
+        elif event_type == 'Medical Emergency':
+            options = [
+                {
+                    'id': 'emergency_services',
+                    'label': 'Call Emergency Services',
+                    'description': 'Contact professional medical help (Cost: $2,000)',
+                    'cost': 2000,
+                    'effectiveness': 0.95,
+                    'effects': {'reputation': 5, 'budget': -2000}
+                },
+                {
+                    'id': 'evacuate',
+                    'label': 'Evacuate if Necessary',
+                    'description': 'Clear area for medical attention (Cost: $1,500)',
+                    'cost': 1500,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 3, 'budget': -1500}
+                },
+                {
+                    'id': 'medical_support',
+                    'label': 'Provide Medical Support',
+                    'description': 'Use on-site medical staff (Cost: $1,000)',
+                    'cost': 1000,
+                    'effectiveness': 0.6,
+                    'effects': {'reputation': 2, 'budget': -1000}
+                }
+            ]
+        
+        elif event_type == 'Power Outage':
+            options = [
+                {
+                    'id': 'backup_generators',
+                    'label': 'Activate Backup Generators',
+                    'description': 'Power critical systems with generators (Cost: $4,000)',
+                    'cost': 4000,
+                    'effectiveness': 0.9,
+                    'effects': {'reputation': 6, 'budget': -4000}
+                },
+                {
+                    'id': 'contact_power_company',
+                    'label': 'Contact Power Company',
+                    'description': 'Urgently request power restoration (Cost: $2,000)',
+                    'cost': 2000,
+                    'effectiveness': 0.7,
+                    'effects': {'reputation': 4, 'budget': -2000}
+                },
+                {
+                    'id': 'emergency_lighting',
+                    'label': 'Implement Emergency Lighting',
+                    'description': 'Set up emergency lighting systems (Cost: $3,000)',
+                    'cost': 3000,
+                    'effectiveness': 0.8,
+                    'effects': {'reputation': 5, 'budget': -3000}
+                }
+            ]
+        
+        return options
     
     def handle_crisis_response(self, festival, event, response_type):
         """Handle crisis response and calculate outcomes"""

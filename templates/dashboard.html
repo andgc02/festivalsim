@@ -29,28 +29,40 @@
 
 <!-- Stats Cards -->
 <div class="row mb-4">
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="stats-card">
             <div class="stats-number" id="budgetDisplay">{{ "${:,.0f}".format(festival.budget) }}</div>
             <div class="stats-label">Current Budget</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="stats-card">
             <div class="stats-number" id="daysRemaining">{{ festival.days_remaining }}</div>
             <div class="stats-label">Days Remaining</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stats-number" id="ticketsSold">0</div>
+            <div class="stats-label">Tickets Sold</div>
+        </div>
+    </div>
+    <div class="col-md-2">
         <div class="stats-card">
             <div class="stats-number" id="artistsCount">0</div>
             <div class="stats-label">Artists Hired</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="stats-card">
             <div class="stats-number" id="vendorsCount">0</div>
             <div class="stats-label">Vendors Hired</div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stats-number" id="daysUntilFestival">{{ festival.days_remaining }}</div>
+            <div class="stats-label">Days Until Festival</div>
         </div>
     </div>
 </div>
@@ -133,20 +145,28 @@
                         </h6>
                         <div class="row">
                             <div class="col-6 mb-2">
-                                <div class="small text-muted">Expected Revenue</div>
-                                <div class="fw-bold" id="expectedRevenue">$0</div>
+                                <div class="small text-muted">Total Revenue</div>
+                                <div class="fw-bold" id="totalRevenue">$0</div>
                             </div>
                             <div class="col-6 mb-2">
                                 <div class="small text-muted">Budget Used</div>
                                 <div class="fw-bold" id="budgetUsed">0%</div>
                             </div>
                             <div class="col-6 mb-2">
-                                <div class="small text-muted">Expected Attendance</div>
-                                <div class="fw-bold" id="expectedAttendance">0</div>
+                                <div class="small text-muted">Avg Ticket Price</div>
+                                <div class="fw-bold" id="avgTicketPrice">$0</div>
                             </div>
                             <div class="col-6 mb-2">
-                                <div class="small text-muted">Profit Margin</div>
-                                <div class="fw-bold" id="profitMargin">0%</div>
+                                <div class="small text-muted">ROI</div>
+                                <div class="fw-bold" id="roi">0%</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Expected Revenue</div>
+                                <div class="fw-bold" id="expectedRevenue">$0</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Expected Attendance</div>
+                                <div class="fw-bold" id="expectedAttendance">0</div>
                             </div>
                         </div>
                     </div>
@@ -158,8 +178,20 @@
                         </h6>
                         <div class="row">
                             <div class="col-6 mb-2">
+                                <div class="small text-muted">Festival Score</div>
+                                <div class="fw-bold" id="festivalScore">0/100</div>
+                            </div>
+                            <div class="col-6 mb-2">
                                 <div class="small text-muted">Festival Reputation</div>
                                 <div class="fw-bold" id="festivalReputation">{{ festival.reputation }}/100</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Artist Satisfaction</div>
+                                <div class="fw-bold" id="artistSatisfactionScore">N/A</div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="small text-muted">Vendor Satisfaction</div>
+                                <div class="fw-bold" id="vendorSatisfactionScore">N/A</div>
                             </div>
                             <div class="col-6 mb-2">
                                 <div class="small text-muted">Avg Artist Popularity</div>
@@ -170,8 +202,39 @@
                                 <div class="fw-bold" id="avgVendorQuality">0</div>
                             </div>
                             <div class="col-6 mb-2">
+                                <div class="small text-muted">Marketing Effectiveness</div>
+                                <div class="fw-bold" id="marketingEffectiveness">100%</div>
+                            </div>
+                            <div class="col-6 mb-2">
                                 <div class="small text-muted">Marketing Budget</div>
                                 <div class="fw-bold" id="marketingBudget">${{ festival.marketing_budget }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Operational Metrics -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6 class="text-warning mb-3">
+                            <i class="fas fa-cogs me-2"></i>Operational Metrics
+                        </h6>
+                        <div class="row">
+                            <div class="col-3 mb-2">
+                                <div class="small text-muted">Total Artists</div>
+                                <div class="fw-bold" id="totalArtists">0</div>
+                            </div>
+                            <div class="col-3 mb-2">
+                                <div class="small text-muted">Total Vendors</div>
+                                <div class="fw-bold" id="totalVendors">0</div>
+                            </div>
+                            <div class="col-3 mb-2">
+                                <div class="small text-muted">Active Marketing</div>
+                                <div class="fw-bold" id="activeMarketing">0</div>
+                            </div>
+                            <div class="col-3 mb-2">
+                                <div class="small text-muted">Pending Events</div>
+                                <div class="fw-bold" id="pendingEvents">0</div>
                             </div>
                         </div>
                     </div>
@@ -233,6 +296,20 @@
             </div>
         </div>
 
+        <!-- Events -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Events & Alerts
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="eventsContainer">
+                    <p class="text-muted text-center">No events at the moment.</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Risk Assessment -->
         <div class="card mb-4">
             <div class="card-header bg-danger text-white">
@@ -272,6 +349,20 @@
                 <p class="small text-muted mb-3">Your festival's popularity is attracting talent!</p>
                 <div id="approachingArtistsList">
                     <p class="text-muted text-center">Loading approaching artists...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hired Artists -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-microphone me-2"></i>Hired Artists
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="artistsList">
+                    <p class="text-muted text-center">No artists hired yet.</p>
                 </div>
             </div>
         </div>
@@ -803,6 +894,7 @@
 <script>
 // Global variables for festival data
 let currentFestivalId;
+let currentFestivalData = null;
 
 // Initialize currentFestivalId safely
 try {
@@ -882,8 +974,9 @@ async function loadFestivalData(forceRefresh = false) {
         festivalData = await response.json();
         lastDataUpdate = now;
         
-        // Set global variable for pause menu
+        // Set global variables for pause menu
         window.currentFestivalData = festivalData;
+        currentFestivalData = festivalData;
         
         updateDashboard(festivalData);
         console.log('Festival data loaded successfully');
@@ -902,10 +995,15 @@ function updateDashboard(data) {
     
     console.log('Step 1: Updating festival stats...');
     // Update festival stats
-    document.getElementById('budgetDisplay').textContent = formatCurrency(data.festival.current_budget);
-    document.getElementById('ticketsSold').textContent = formatNumber(data.tickets.reduce((sum, t) => sum + t.sold_quantity, 0));
-    document.getElementById('artistsCount').textContent = data.artists.length;
-    document.getElementById('vendorsCount').textContent = data.vendors.length;
+    document.getElementById('budgetDisplay').textContent = formatCurrency(data.festival.current_budget || data.festival.budget);
+    
+    // Safely handle tickets array
+    const ticketsSold = data.tickets && Array.isArray(data.tickets) ? 
+        data.tickets.reduce((sum, t) => sum + (t.sold_quantity || 0), 0) : 0;
+    document.getElementById('ticketsSold').textContent = formatNumber(ticketsSold);
+    
+    document.getElementById('artistsCount').textContent = data.artists ? data.artists.length : 0;
+    document.getElementById('vendorsCount').textContent = data.vendors ? data.vendors.length : 0;
     
     console.log('Step 2: Updating days remaining...');
     // Update festival status using days_remaining
@@ -914,9 +1012,9 @@ function updateDashboard(data) {
     
     console.log('Step 3: Updating lists...');
     // Update lists
-    updateArtistsList(data.artists);
-    updateVendorsList(data.vendors);
-    updateEventsList(data.events);
+    updateArtistsList(data.artists || []);
+    updateVendorsList(data.vendors || []);
+    updateEventsList(data.events || []);
     
     console.log('Step 4: Updating analytics metrics...');
     // Update analytics metrics
@@ -924,10 +1022,10 @@ function updateDashboard(data) {
     
     console.log('Step 5: Updating synergies...');
     // Update synergies
-    updateSynergies(data.synergies);
+    updateSynergies(data.synergies || []);
     
     // Update vendor relationships
-    updateVendorRelationships(data.vendor_relationships);
+    updateVendorRelationships(data.vendor_relationships || []);
     
     console.log('=== UPDATE DASHBOARD COMPLETE ===');
     
@@ -938,11 +1036,13 @@ function updateDashboard(data) {
 }
 
 function updateAnalyticsMetrics(data) {
-    // Financial Metrics
-    const totalRevenue = data.tickets.reduce((sum, ticket) => sum + (ticket.sold_quantity * ticket.price), 0);
-    const budgetUsed = ((data.festival.budget - data.festival.current_budget) / data.festival.budget * 100).toFixed(1);
-    const avgTicketPrice = data.tickets.length > 0 ? 
-        (totalRevenue / data.tickets.reduce((sum, t) => sum + t.sold_quantity, 0)).toFixed(2) : 0;
+    // Financial Metrics - safely handle tickets array
+    const tickets = data.tickets && Array.isArray(data.tickets) ? data.tickets : [];
+    const totalRevenue = tickets.reduce((sum, ticket) => sum + ((ticket.sold_quantity || 0) * (ticket.price || 0)), 0);
+    const budgetUsed = data.festival.budget > 0 ? 
+        ((data.festival.budget - (data.festival.current_budget || data.festival.budget)) / data.festival.budget * 100).toFixed(1) : 0;
+    const avgTicketPrice = tickets.length > 0 ? 
+        (totalRevenue / tickets.reduce((sum, t) => sum + (t.sold_quantity || 0), 0)).toFixed(2) : 0;
     const roi = data.festival.budget > 0 ? ((totalRevenue - data.festival.budget) / data.festival.budget * 100).toFixed(1) : 0;
     
     document.getElementById('totalRevenue').textContent = formatCurrency(totalRevenue);
@@ -962,10 +1062,12 @@ function updateAnalyticsMetrics(data) {
     document.getElementById('marketingEffectiveness').textContent = marketingEffectiveness + '%';
     
     // Operational Metrics
-    const totalArtists = data.artists.length;
-    const totalVendors = data.vendors.length;
-    const activeMarketing = data.marketing.filter(m => m.status === 'active').length;
-    const pendingEvents = data.events.filter(e => !e.resolved).length;
+    const totalArtists = data.artists ? data.artists.length : 0;
+    const totalVendors = data.vendors ? data.vendors.length : 0;
+    const marketing = data.marketing && Array.isArray(data.marketing) ? data.marketing : [];
+    const events = data.events && Array.isArray(data.events) ? data.events : [];
+    const activeMarketing = marketing.filter(m => m.status === 'active').length;
+    const pendingEvents = events.filter(e => !e.resolved).length;
     
     document.getElementById('totalArtists').textContent = totalArtists;
     document.getElementById('totalVendors').textContent = totalVendors;
@@ -977,35 +1079,41 @@ function calculateFestivalScore(data) {
     let score = 0;
     
     // Base score from budget management
-    const budgetEfficiency = (data.festival.current_budget / data.festival.budget) * 100;
+    const currentBudget = data.festival.current_budget || data.festival.budget;
+    const budgetEfficiency = data.festival.budget > 0 ? (currentBudget / data.festival.budget) * 100 : 0;
     score += Math.min(budgetEfficiency, 25); // Max 25 points for budget efficiency
     
     // Artist quality score
-    if (data.artists.length > 0) {
-        const avgArtistPopularity = data.artists.reduce((sum, artist) => sum + artist.popularity, 0) / data.artists.length;
+    const artists = data.artists && Array.isArray(data.artists) ? data.artists : [];
+    if (artists.length > 0) {
+        const avgArtistPopularity = artists.reduce((sum, artist) => sum + (artist.popularity || 0), 0) / artists.length;
         score += (avgArtistPopularity / 100) * 25; // Max 25 points for artist quality
     }
     
     // Vendor diversity score
-    const vendorCategories = new Set(data.vendors.map(v => v.category));
+    const vendors = data.vendors && Array.isArray(data.vendors) ? data.vendors : [];
+    const vendorCategories = new Set(vendors.map(v => v.category || v.type || 'unknown'));
     score += Math.min(vendorCategories.size * 5, 20); // Max 20 points for vendor diversity
     
     // Marketing effectiveness score
-    const activeMarketing = data.marketing.filter(m => m.status === 'active');
+    const marketing = data.marketing && Array.isArray(data.marketing) ? data.marketing : [];
+    const activeMarketing = marketing.filter(m => m.status === 'active');
     score += Math.min(activeMarketing.length * 5, 15); // Max 15 points for marketing
     
     // Ticket sales score
-    const totalTickets = data.tickets.reduce((sum, t) => sum + t.sold_quantity, 0);
+    const tickets = data.tickets && Array.isArray(data.tickets) ? data.tickets : [];
+    const totalTickets = tickets.reduce((sum, t) => sum + (t.sold_quantity || 0), 0);
     score += Math.min(totalTickets / 10, 15); // Max 15 points for ticket sales
     
     return Math.round(score);
 }
 
 function calculateArtistSatisfaction(data) {
-    if (data.artists.length === 0) return 'N/A';
+    const artists = data.artists && Array.isArray(data.artists) ? data.artists : [];
+    if (artists.length === 0) return 'N/A';
     
-    const confirmedArtists = data.artists.filter(a => a.status === 'confirmed');
-    const satisfactionRate = (confirmedArtists.length / data.artists.length) * 100;
+    const confirmedArtists = artists.filter(a => a.status === 'confirmed');
+    const satisfactionRate = (confirmedArtists.length / artists.length) * 100;
     
     if (satisfactionRate >= 90) return 'Excellent';
     if (satisfactionRate >= 75) return 'Good';
@@ -1014,10 +1122,11 @@ function calculateArtistSatisfaction(data) {
 }
 
 function calculateVendorSatisfaction(data) {
-    if (data.vendors.length === 0) return 'N/A';
+    const vendors = data.vendors && Array.isArray(data.vendors) ? data.vendors : [];
+    if (vendors.length === 0) return 'N/A';
     
-    const confirmedVendors = data.vendors.filter(v => v.status === 'confirmed');
-    const satisfactionRate = (confirmedVendors.length / data.vendors.length) * 100;
+    const confirmedVendors = vendors.filter(v => v.status === 'confirmed');
+    const satisfactionRate = (confirmedVendors.length / vendors.length) * 100;
     
     if (satisfactionRate >= 90) return 'Excellent';
     if (satisfactionRate >= 75) return 'Good';
@@ -1026,18 +1135,20 @@ function calculateVendorSatisfaction(data) {
 }
 
 function calculateMarketingEffectiveness(data) {
-    const activeMarketing = data.marketing.filter(m => m.status === 'active');
+    const marketing = data.marketing && Array.isArray(data.marketing) ? data.marketing : [];
+    const activeMarketing = marketing.filter(m => m.status === 'active');
     let baseEffectiveness = 100; // Base effectiveness
     
     if (activeMarketing.length > 0) {
-        const totalEffectiveness = activeMarketing.reduce((sum, campaign) => sum + campaign.effectiveness, 0);
+        const totalEffectiveness = activeMarketing.reduce((sum, campaign) => sum + (campaign.effectiveness || 0), 0);
         baseEffectiveness = Math.min(Math.round(totalEffectiveness * 100), 100);
     }
     
     // Add synergy bonuses
     let synergyBonus = 0;
-    if (data.synergies && data.synergies.length > 0) {
-        synergyBonus = data.synergies.reduce((sum, synergy) => sum + (synergy.marketing_bonus * 100), 0);
+    const synergies = data.synergies && Array.isArray(data.synergies) ? data.synergies : [];
+    if (synergies.length > 0) {
+        synergyBonus = synergies.reduce((sum, synergy) => sum + ((synergy.marketing_bonus || 0) * 100), 0);
     }
     
     return Math.min(baseEffectiveness + synergyBonus, 200); // Cap at 200%
@@ -2125,13 +2236,13 @@ function showPauseMenu() {
 }
 
 function updatePauseMenuInfo() {
-    // Update current festival information in the pause menu
-    const currentData = window.currentFestivalData || festivalData;
+    console.log('showPauseMenu called');
+    console.log('Current festival ID:', currentFestivalId);
+    console.log('Current festival data:', currentFestivalData);
     
-    if (currentData && currentData.festival) {
-        const festival = currentData.festival;
+    if (currentFestivalData && currentFestivalData.festival) {
+        const festival = currentFestivalData.festival;
         
-        // Update festival info
         const nameElement = document.getElementById('currentFestivalName');
         const locationElement = document.getElementById('currentFestivalLocation');
         const dateElement = document.getElementById('currentFestivalDate');
@@ -2139,14 +2250,15 @@ function updatePauseMenuInfo() {
         const statusElement = document.getElementById('currentFestivalStatus');
         const daysElement = document.getElementById('currentFestivalDays');
         
-        if (nameElement) nameElement.textContent = festival.name;
-        if (locationElement) locationElement.textContent = festival.location;
-        if (dateElement) dateElement.textContent = new Date(festival.date).toLocaleDateString();
-        if (budgetElement) budgetElement.textContent = formatCurrency(festival.current_budget);
+        if (nameElement) nameElement.textContent = festival.name || 'Unknown';
+        if (locationElement) locationElement.textContent = festival.location || 'Unknown';
+        if (dateElement) dateElement.textContent = festival.date ? new Date(festival.date).toLocaleDateString() : 'Not set';
+        if (budgetElement) budgetElement.textContent = formatCurrency(festival.current_budget || festival.budget || 0);
         
         if (statusElement) {
-            statusElement.textContent = festival.status.charAt(0).toUpperCase() + festival.status.slice(1);
-            statusElement.className = `badge bg-${festival.status === 'active' ? 'success' : 'warning'}`;
+            const status = festival.status || 'active';
+            statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            statusElement.className = `badge bg-${status === 'active' ? 'success' : 'warning'}`;
         }
         
         if (daysElement) {
@@ -2353,38 +2465,41 @@ function stopAutoSave() {
 
 function updateSynergies(synergies) {
     try {
-        const card = document.getElementById('synergiesCard');
-        const container = document.getElementById('synergiesList');
+        const container = document.getElementById('synergiesContainer');
         
-        if (!synergies || synergies.length === 0) {
-            card.style.display = 'none';
+        if (!container) {
+            console.warn('Synergies container not found');
             return;
         }
         
-        card.style.display = 'block';
+        if (!synergies || synergies.length === 0) {
+            container.innerHTML = '<p class="text-muted">No synergies available yet. Hire more artists to unlock synergies!</p>';
+            return;
+        }
+        
         container.innerHTML = synergies.map(synergy => `
             <div class="card mb-3 border-primary">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-8 col-sm-12">
                             <h6 class="card-title text-primary">
-                                <i class="fas fa-magic me-2"></i>${synergy.name}
+                                <i class="fas fa-magic me-2"></i>${synergy.name || 'Synergy'}
                             </h6>
-                            <p class="card-text small mb-2">${synergy.description}</p>
+                            <p class="card-text small mb-2">${synergy.description || 'Genre synergy effect'}</p>
                             <div class="mb-2">
                                 <small class="text-muted">
-                                    <strong>Genres:</strong> ${synergy.genres.join(', ')}<br>
-                                    <strong>Artists:</strong> ${synergy.artist_count}
+                                    <strong>Genres:</strong> ${(synergy.genres || []).join(', ')}<br>
+                                    <strong>Artists:</strong> ${synergy.artist_count || 0}
                                 </small>
                             </div>
                         </div>
                         <div class="col-md-4 col-sm-12 text-end">
                             <div class="mb-2">
                                 <div class="badge bg-success mb-1">
-                                    <i class="fas fa-chart-line me-1"></i>+${(synergy.marketing_bonus * 100).toFixed(0)}% Marketing
+                                    <i class="fas fa-chart-line me-1"></i>+${((synergy.marketing_bonus || 0) * 100).toFixed(0)}% Marketing
                                 </div>
                                 <div class="badge bg-info">
-                                    <i class="fas fa-star me-1"></i>+${synergy.reputation_bonus} Reputation
+                                    <i class="fas fa-star me-1"></i>+${synergy.reputation_bonus || 0} Reputation
                                 </div>
                             </div>
                         </div>
@@ -2400,23 +2515,26 @@ function updateSynergies(synergies) {
 // Update vendor relationships
 function updateVendorRelationships(relationships) {
     try {
-        const card = document.getElementById('vendorRelationshipsCard');
-        const container = document.getElementById('vendorRelationshipsList');
+        const container = document.getElementById('vendorRelationshipsContainer');
         
-        if (!relationships || relationships.length === 0) {
-            card.style.display = 'none';
+        if (!container) {
+            console.warn('Vendor relationships container not found');
             return;
         }
         
-        card.style.display = 'block';
+        if (!relationships || relationships.length === 0) {
+            container.innerHTML = '<p class="text-muted">No vendor relationships to display. Hire more vendors to see relationships!</p>';
+            return;
+        }
+        
         container.innerHTML = relationships.map(relationship => {
             const isComplementary = relationship.type === 'complementary';
             const borderClass = isComplementary ? 'border-success' : 'border-warning';
             const titleClass = isComplementary ? 'text-success' : 'text-warning';
             const icon = isComplementary ? 'fa-handshake' : 'fa-exclamation-triangle';
             const bonusText = isComplementary ? 
-                `+${(relationship.bonus * 100).toFixed(0)}% Satisfaction` : 
-                `${(relationship.penalty * 100).toFixed(0)}% Satisfaction Penalty`;
+                `+${((relationship.bonus || 0) * 100).toFixed(0)}% Satisfaction` : 
+                `${((relationship.penalty || 0) * 100).toFixed(0)}% Satisfaction Penalty`;
             
             return `
                 <div class="card mb-3 ${borderClass}">
@@ -2424,9 +2542,9 @@ function updateVendorRelationships(relationships) {
                         <div class="row">
                             <div class="col-md-8 col-sm-12">
                                 <h6 class="card-title ${titleClass}">
-                                    <i class="fas ${icon} me-2"></i>${relationship.vendor1} & ${relationship.vendor2}
+                                    <i class="fas ${icon} me-2"></i>${relationship.vendor1 || 'Vendor 1'} & ${relationship.vendor2 || 'Vendor 2'}
                                 </h6>
-                                <p class="card-text small mb-2">${relationship.description}</p>
+                                <p class="card-text small mb-2">${relationship.description || 'Vendor relationship effect'}</p>
                                 <div class="badge ${isComplementary ? 'bg-success' : 'bg-warning'}">
                                     ${bonusText}
                                 </div>
@@ -2434,7 +2552,7 @@ function updateVendorRelationships(relationships) {
                             <div class="col-md-4 col-sm-12 text-end">
                                 <div class="mb-2">
                                     <small class="text-muted">
-                                        <strong>Type:</strong> ${relationship.type.charAt(0).toUpperCase() + relationship.type.slice(1)}
+                                        <strong>Type:</strong> ${(relationship.type || 'unknown').charAt(0).toUpperCase() + (relationship.type || 'unknown').slice(1)}
                                     </small>
                                 </div>
                             </div>

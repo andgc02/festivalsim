@@ -1,0 +1,10 @@
+{% macro stats_card(id, value, label, icon="", color="primary") %}
+<div class="col-md-2">
+    <div class="stats-card">
+        <div class="stats-number" id="{{ id }}">{{ value }}</div>
+        <div class="stats-label">
+            {% if icon %}<i class="fas {{ icon }} me-1"></i>{% endif %}{{ label }}
+        </div>
+    </div>
+</div>
+{% endmacro %} 

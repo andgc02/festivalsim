@@ -3,6 +3,7 @@ Festival Simulator - Main Flask Application
 """
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit
 from models import db, Festival, Artist, Vendor
 from game_systems.game_coordinator import GameCoordinator
 import json
@@ -12,11 +13,41 @@ import os
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///festival_sim.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'your-secret-key-here'
 
 db.init_app(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Initialize game coordinator
 game_coordinator = GameCoordinator()
+
+# Cache for available artists and vendors to ensure consistency
+available_artists_cache = {}
+available_vendors_cache = {}
+
+def get_cached_artists(count=5):
+    """Get cached available artists, generating new ones if cache is empty"""
+    # Use a single cache key for consistency across all requests
+    cache_key = "artists"
+    if cache_key not in available_artists_cache:
+        available_artists_cache[cache_key] = game_coordinator.get_available_artists(count)
+    return available_artists_cache[cache_key]
+
+def get_cached_vendors(count=5):
+    """Get cached available vendors, generating new ones if cache is empty"""
+    # Use a single cache key for consistency across all requests
+    cache_key = "vendors"
+    if cache_key not in available_vendors_cache:
+        available_vendors_cache[cache_key] = game_coordinator.get_available_vendors(count)
+    return available_vendors_cache[cache_key]
+
+def clear_artist_cache():
+    """Clear the artist cache to force regeneration"""
+    available_artists_cache.clear()
+
+def clear_vendor_cache():
+    """Clear the vendor cache to force regeneration"""
+    available_vendors_cache.clear()
 
 @app.route('/')
 def index():
@@ -58,16 +89,75 @@ def dashboard(festival_id):
     festival = Festival.query.get_or_404(festival_id)
     festivals = Festival.query.all()
     
-    return render_template('dashboard.html', festival=festival, festivals=festivals)
+    # Use the refactored template for better modularity
+    return render_template('dashboard_refactored.html', festival=festival, festivals=festivals)
 
 @app.route('/api/festival/<int:festival_id>')
 def get_festival_data(festival_id):
     """Get comprehensive festival data"""
-    summary = game_coordinator.get_festival_summary(festival_id)
-    if not summary:
-        return jsonify({'error': 'Festival not found'}), 404
+    festival = Festival.query.get_or_404(festival_id)
+    artists = Artist.query.filter_by(festival_id=festival_id).all()
+    vendors = Vendor.query.filter_by(festival_id=festival_id).all()
     
-    return jsonify(summary)
+    # Get synergies and relationships
+    synergies = game_coordinator.artist_system.calculate_genre_synergies(festival_id)
+    vendor_relationships = game_coordinator.vendor_system.calculate_vendor_relationships(festival_id)
+    
+    # Get dynamic events
+    dynamic_events = game_coordinator.event_system.check_for_dynamic_events(festival)
+    
+    # Convert to the structure expected by frontend
+    festival_data = {
+        'festival': {
+            'id': festival.id,
+            'name': festival.name,
+            'days_remaining': festival.days_remaining,
+            'budget': festival.budget,
+            'current_budget': festival.budget,  # Add this for frontend compatibility
+            'reputation': festival.reputation,
+            'venue_capacity': festival.venue_capacity,
+            'marketing_budget': festival.marketing_budget
+        },
+        'artists': [
+            {
+                'id': artist.id,
+                'name': artist.name,
+                'genre': artist.genre,
+                'popularity': artist.popularity,
+                'fee': artist.fee,
+                'performance_duration': artist.performance_duration,
+                'stage_requirements': artist.stage_requirements,
+                'status': 'confirmed'  # Default status
+            } for artist in artists
+        ],
+        'vendors': [
+            {
+                'id': vendor.id,
+                'name': vendor.name,
+                'category': vendor.specialty,
+                'type': vendor.specialty,
+                'quality': vendor.quality,
+                'cost': vendor.cost,
+                'revenue': vendor.revenue,
+                'status': 'confirmed'  # Default status
+            } for vendor in vendors
+        ],
+        'tickets': [
+            {
+                'id': 1,
+                'type': 'General Admission',
+                'price': 50.0,
+                'sold_quantity': 0,
+                'total_quantity': festival.venue_capacity
+            }
+        ],
+        'marketing': [],
+        'events': dynamic_events,  # Add dynamic events to the response
+        'synergies': synergies,
+        'vendor_relationships': vendor_relationships
+    }
+    
+    return jsonify(festival_data)
 
 @app.route('/api/advance_time/<int:festival_id>', methods=['POST'])
 def advance_time(festival_id):
@@ -79,39 +169,188 @@ def advance_time(festival_id):
 def get_available_artists():
     """Get available artists for hiring"""
     count = request.args.get('count', 5, type=int)
-    artists = game_coordinator.get_available_artists(count)
+    artists = get_cached_artists(count)
     return jsonify(artists)
+
+@app.route('/api/artists')
+def get_artists():
+    """Get all available artists (alias for available)"""
+    return get_available_artists()
 
 @app.route('/api/vendors/available')
 def get_available_vendors():
     """Get available vendors for hiring"""
     count = request.args.get('count', 5, type=int)
-    vendors = game_coordinator.get_available_vendors(count)
+    vendors = get_cached_vendors(count)
     return jsonify(vendors)
 
-@app.route('/api/artists/hire/<int:festival_id>', methods=['POST'])
-def hire_artist(festival_id):
+@app.route('/api/vendors')
+def get_vendors():
+    """Get all available vendors (alias for available)"""
+    return get_available_vendors()
+
+@app.route('/api/marketing/campaigns')
+def get_marketing_campaigns():
+    """Get available marketing campaigns"""
+    campaigns = [
+        {
+            'id': 1,
+            'name': 'Social Media Blitz',
+            'type': 'Social Media',
+            'target_audience': 'Young Adults (18-25)',
+            'effectiveness': 1.25,
+            'duration_days': 7,
+            'cost': 5000,
+            'description': 'Target young adults through social media platforms'
+        },
+        {
+            'id': 2,
+            'name': 'Radio Advertisement',
+            'type': 'Radio',
+            'target_audience': 'Adults (26-40)',
+            'effectiveness': 1.15,
+            'duration_days': 14,
+            'cost': 8000,
+            'description': 'Reach adults through radio commercials'
+        },
+        {
+            'id': 3,
+            'name': 'Billboard Campaign',
+            'type': 'Billboards',
+            'target_audience': 'Families',
+            'effectiveness': 1.20,
+            'duration_days': 30,
+            'cost': 15000,
+            'description': 'High-visibility outdoor advertising for families'
+        },
+        {
+            'id': 4,
+            'name': 'Influencer Partnership',
+            'type': 'Influencer Marketing',
+            'target_audience': 'Music Enthusiasts',
+            'effectiveness': 1.35,
+            'duration_days': 5,
+            'cost': 12000,
+            'description': 'Partner with music influencers for maximum engagement'
+        },
+        {
+            'id': 5,
+            'name': 'TV Commercial',
+            'type': 'TV Commercials',
+            'target_audience': 'Families',
+            'effectiveness': 1.40,
+            'duration_days': 21,
+            'cost': 25000,
+            'description': 'High-impact television advertising for broad reach'
+        },
+        {
+            'id': 6,
+            'name': 'Event Marketing',
+            'type': 'Event Marketing',
+            'target_audience': 'Music Enthusiasts',
+            'effectiveness': 1.30,
+            'duration_days': 5,
+            'cost': 10000,
+            'description': 'Pop-up events and street marketing for direct engagement'
+        },
+        {
+            'id': 7,
+            'name': 'Print Media Campaign',
+            'type': 'Print Media',
+            'target_audience': 'Older Adults (41+)',
+            'effectiveness': 1.10,
+            'duration_days': 14,
+            'cost': 6000,
+            'description': 'Newspaper ads and magazines for traditional audiences'
+        },
+        {
+            'id': 8,
+            'name': 'Email Marketing',
+            'type': 'Email Marketing',
+            'target_audience': 'Adults (26-40)',
+            'effectiveness': 1.05,
+            'duration_days': 3,
+            'cost': 2000,
+            'description': 'Cost-effective email campaigns to existing database'
+        }
+    ]
+    return jsonify(campaigns)
+
+@app.route('/api/artists/hire', methods=['POST'])
+def hire_artist_endpoint():
     """Hire an artist"""
     data = request.get_json()
-    result = game_coordinator.hire_artist(festival_id, data)
+    festival_id = data.get('festival_id', 1)  # Default to festival 1
+    artist_id = data.get('artist_id')
+    
+    if not artist_id:
+        return jsonify({'success': False, 'error': 'Artist ID required'}), 400
+    
+    # Get the artist data from cached available artists using the same count as display
+    artists = get_cached_artists(5)  # Use same count as display endpoint
+    artist = next((a for a in artists if a['id'] == artist_id), None)
+    
+    if not artist:
+        return jsonify({'success': False, 'error': 'Artist not found'}), 404
+    
+    result = game_coordinator.hire_artist(festival_id, artist)
+    
+    # Clear the cache after hiring to refresh the available artists
+    if result.get('success'):
+        clear_artist_cache()
+    
     return jsonify(result)
 
-@app.route('/api/vendors/hire/<int:festival_id>', methods=['POST'])
-def hire_vendor(festival_id):
+@app.route('/api/vendors/hire', methods=['POST'])
+def hire_vendor_endpoint():
     """Hire a vendor"""
     data = request.get_json()
-    result = game_coordinator.hire_vendor(festival_id, data)
+    festival_id = data.get('festival_id', 1)  # Default to festival 1
+    vendor_id = data.get('vendor_id')
+    
+    if not vendor_id:
+        return jsonify({'success': False, 'error': 'Vendor ID required'}), 400
+    
+    # Get the vendor data from cached available vendors using the same count as display
+    vendors = get_cached_vendors(5)  # Use same count as display endpoint
+    vendor = next((v for v in vendors if v['id'] == vendor_id), None)
+    
+    if not vendor:
+        return jsonify({'success': False, 'error': 'Vendor not found'}), 404
+    
+    result = game_coordinator.hire_vendor(festival_id, vendor)
+    
+    # Clear the cache after hiring to refresh the available vendors
+    if result.get('success'):
+        clear_vendor_cache()
+    
     return jsonify(result)
 
-@app.route('/api/marketing/campaign/<int:festival_id>', methods=['POST'])
-def run_marketing_campaign(festival_id):
-    """Run a marketing campaign"""
+@app.route('/api/marketing/launch', methods=['POST'])
+def launch_marketing_campaign():
+    """Launch a marketing campaign"""
     data = request.get_json()
+    festival_id = data.get('festival_id', 1)
+    campaign_id = data.get('campaign_id')
+    
+    if not campaign_id:
+        return jsonify({'success': False, 'error': 'Campaign ID required'}), 400
+    
+    # Get campaign data
+    campaigns = get_marketing_campaigns().json
+    campaign = next((c for c in campaigns if c['id'] == campaign_id), None)
+    
+    if not campaign:
+        return jsonify({'success': False, 'error': 'Campaign not found'}), 404
+    
+    # Use the target audience specified in the campaign data
+    target_audience = campaign.get('target_audience', 'Music Enthusiasts')
+    
     result = game_coordinator.run_marketing_campaign(
         festival_id, 
-        data['campaign_type'], 
-        data['target_audience'], 
-        data['budget']
+        campaign['type'], 
+        target_audience, 
+        campaign['cost']
     )
     return jsonify(result)
 
@@ -190,7 +429,185 @@ def get_risk_assessment(festival_id):
     risk = game_coordinator.event_system.calculate_overall_risk_score(festival)
     return jsonify(risk)
 
+@app.route('/api/festival/auto_save', methods=['POST'])
+def auto_save_festival():
+    """Auto-save festival data"""
+    data = request.get_json()
+    festival_id = data.get('festival_id')
+    
+    if not festival_id:
+        return jsonify({'success': False, 'error': 'Festival ID required'}), 400
+    
+    festival = Festival.query.get(festival_id)
+    if not festival:
+        return jsonify({'success': False, 'error': 'Festival not found'}), 404
+    
+    # In a real application, you might want to save additional data
+    # For now, we'll just return success
+    return jsonify({'success': True, 'message': 'Auto-save completed'})
+
+@app.route('/api/artists/refresh', methods=['POST'])
+def refresh_artists():
+    """Refresh the available artists cache"""
+    clear_artist_cache()
+    return jsonify({'success': True, 'message': 'Artist cache refreshed'})
+
+@app.route('/api/vendors/refresh', methods=['POST'])
+def refresh_vendors():
+    """Refresh the available vendors cache"""
+    clear_vendor_cache()
+    return jsonify({'success': True, 'message': 'Vendor cache refreshed'})
+
+@app.route('/api/events/force_generate/<int:festival_id>', methods=['POST'])
+def force_generate_events(festival_id):
+    """Force generate dynamic events for testing"""
+    festival = Festival.query.get_or_404(festival_id)
+    
+    # Temporarily increase all event probabilities to 100% for testing
+    original_probabilities = {}
+    for event_type, event_data in game_coordinator.event_system.event_types.items():
+        original_probabilities[event_type] = event_data['probability']
+        event_data['probability'] = 1.0  # 100% chance
+    
+    # Generate events
+    events = game_coordinator.event_system.check_for_dynamic_events(festival)
+    
+    # Restore original probabilities
+    for event_type, probability in original_probabilities.items():
+        game_coordinator.event_system.event_types[event_type]['probability'] = probability
+    
+    return jsonify({
+        'success': True,
+        'events_generated': len(events),
+        'events': events
+    })
+
+@app.route('/api/events/respond/<int:festival_id>', methods=['POST'])
+def respond_to_event(festival_id):
+    """Handle player response to a dynamic event"""
+    data = request.get_json()
+    event_type = data.get('event_type')
+    option_id = data.get('option_id')
+    
+    if not event_type or not option_id:
+        return jsonify({'success': False, 'error': 'Event type and option ID required'}), 400
+    
+    festival = Festival.query.get_or_404(festival_id)
+    
+    # Get the event data and find the selected option
+    event_data = game_coordinator.event_system.event_types.get(event_type)
+    if not event_data:
+        return jsonify({'success': False, 'error': 'Invalid event type'}), 400
+    
+    # Generate interactive options to find the selected one
+    options = game_coordinator.event_system.generate_interactive_options(event_type, festival, event_data['effects'])
+    selected_option = next((opt for opt in options if opt['id'] == option_id), None)
+    
+    if not selected_option:
+        return jsonify({'success': False, 'error': 'Invalid option ID'}), 400
+    
+    # Check if festival has enough budget
+    if festival.budget < selected_option['cost']:
+        return jsonify({'success': False, 'error': 'Insufficient budget for this action'}), 400
+    
+    # Apply the option effects
+    festival.budget -= selected_option['cost']
+    
+    # Apply reputation and other effects
+    if 'reputation' in selected_option['effects']:
+        festival.reputation = max(0, min(100, festival.reputation + selected_option['effects']['reputation']))
+    
+    # Save changes
+    db.session.commit()
+    
+    # Generate response message
+    response_messages = {
+        'find_replacement': 'Replacement artist found! The show will go on.',
+        'offer_refunds': 'Refunds processed. Attendees appreciate the gesture.',
+        'adjust_schedule': 'Schedule adjusted successfully.',
+        'activate_protocols': 'Emergency protocols activated. Safety measures in place.',
+        'provide_shelter': 'Emergency shelters set up and ready.',
+        'monitor_weather': 'Weather monitoring systems active.',
+        'call_backup': 'Backup technicians called and responding.',
+        'use_backup_equipment': 'Backup equipment deployed successfully.',
+        'adjust_programming': 'Programming adjusted to accommodate issues.',
+        'increase_security': 'Security presence increased immediately.',
+        'implement_protocols': 'Security protocols implemented.',
+        'coordinate_authorities': 'Authorities contacted and coordinating.',
+        'find_backup_vendors': 'Backup vendors secured and ready.',
+        'provide_alternatives': 'Alternative food options provided.',
+        'compensate_attendees': 'Attendees compensated for inconvenience.',
+        'arrange_alternatives': 'Alternative transportation arranged.',
+        'extend_shuttles': 'Shuttle services extended.',
+        'provide_parking': 'Additional parking secured.',
+        'capitalize_moment': 'Moment capitalized! Social media buzz increased.',
+        'social_media': 'Social media content created and shared.',
+        'extend_experience': 'Experience extended with special activities.',
+        'thank_sponsors': 'Sponsors thanked publicly.',
+        'enhance_visibility': 'Sponsor visibility enhanced.',
+        'plan_partnerships': 'Future partnerships planned.',
+        'arrange_stage': 'Special collaboration stage arranged!',
+        'promote_collaboration': 'Collaboration heavily promoted.',
+        'record_performance': 'Performance recorded for future use.',
+        'vip_treatment': 'VIP treatment provided successfully.',
+        'meet_greet': 'Meet and greet arranged.',
+        'document_visit': 'VIP visit documented and shared.',
+        'amplify_content': 'Viral content amplified with promotion.',
+        'engage_audience': 'Audience engagement increased.',
+        'create_more': 'Additional content created.',
+        'emergency_repair': 'Emergency repair team called.',
+        'backup_equipment': 'Backup equipment deployed.',
+        'rent_replacement': 'Replacement equipment rented.',
+        'emergency_delivery': 'Emergency food delivery arranged.',
+        'find_suppliers': 'Local suppliers contacted.',
+        'offer_alternatives': 'Alternative food options provided.',
+        'emergency_services': 'Emergency services contacted.',
+        'evacuate': 'Area evacuated for medical attention.',
+        'medical_support': 'Medical support provided.',
+        'backup_generators': 'Backup generators activated.',
+        'contact_power_company': 'Power company contacted.',
+        'emergency_lighting': 'Emergency lighting implemented.'
+    }
+    
+    response_message = response_messages.get(option_id, 'Action completed successfully.')
+    
+    return jsonify({
+        'success': True,
+        'message': response_message,
+        'cost': selected_option['cost'],
+        'effectiveness': selected_option['effectiveness'],
+        'effects_applied': selected_option['effects'],
+        'new_budget': festival.budget,
+        'new_reputation': festival.reputation
+    })
+
+# Socket.IO event handlers
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+    emit('connected', {'data': 'Connected'})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
+
+@socketio.on('join_festival')
+def handle_join_festival(data):
+    festival_id = data.get('festival_id')
+    if festival_id:
+        print(f'Client joined festival {festival_id}')
+        emit('festival_joined', {'festival_id': festival_id})
+
+@socketio.on('request_update')
+def handle_request_update(data):
+    festival_id = data.get('festival_id')
+    if festival_id:
+        # Get updated festival data and emit it
+        festival = Festival.query.get(festival_id)
+        if festival:
+            emit('festival_updated', {'festival_id': festival_id})
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000) 

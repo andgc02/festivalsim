@@ -1,0 +1,18 @@
+{% macro sidebar_card(title, icon, color="primary", id="", content_id="") %}
+<div class="card mb-4" {% if id %}id="{{ id }}"{% endif %}>
+    <div class="card-header {% if color != 'primary' %}bg-{{ color }} text-white{% endif %}">
+        <h5 class="mb-0">
+            <i class="fas {{ icon }} me-2"></i>{{ title }}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if content_id %}
+        <div id="{{ content_id }}">
+            {{ caller() }}
+        </div>
+        {% else %}
+        {{ caller() }}
+        {% endif %}
+    </div>
+</div>
+{% endmacro %} 

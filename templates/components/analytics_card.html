@@ -1,0 +1,17 @@
+{% macro analytics_card(title, icon, color="info") %}
+<div class="col-md-6 mb-4">
+    <h6 class="text-{{ color }} mb-3">
+        <i class="fas {{ icon }} me-2"></i>{{ title }}
+    </h6>
+    <div class="row">
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro metric_item(id, label, value="0", prefix="", suffix="") %}
+<div class="col-6 mb-2">
+    <div class="small text-muted">{{ label }}</div>
+    <div class="fw-bold" id="{{ id }}">{{ prefix }}{{ value }}{{ suffix }}</div>
+</div>
+{% endmacro %} 
