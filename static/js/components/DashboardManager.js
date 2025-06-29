@@ -53,60 +53,71 @@ class DashboardManager {
 
     updateDashboard(data) {
         console.log('=== UPDATE DASHBOARD START ===');
-        if (!data || !data.festival) {
-            console.error('Invalid festival data received');
+        
+        if (!data) {
+            console.log('No data provided for dashboard update');
             return;
         }
-        
+
+        const festival = data.festival;
+        const artists = data.artists || [];
+        const vendors = data.vendors || [];
+        const tickets = data.tickets || [];
+        const synergies = data.synergies || [];
+        const vendorRelationships = data.vendor_relationships || [];
+
         console.log('Step 1: Updating festival stats...');
-        this.updateFestivalStats(data);
+        this.updateFestivalStats(festival, artists, vendors, tickets);
         
         console.log('Step 2: Updating days remaining...');
-        this.updateDaysRemaining(data);
+        this.updateDaysRemaining(festival);
         
         console.log('Step 3: Updating lists...');
-        this.updateLists(data);
+        this.updateLists(artists, vendors);
         
         console.log('Step 4: Updating analytics metrics...');
-        this.updateAnalyticsMetrics(data);
+        this.updateAnalyticsMetrics(festival, artists, vendors, tickets);
         
         console.log('Step 5: Updating synergies...');
-        this.updateSynergies(data.synergies || []);
-        this.updateVendorRelationships(data.vendor_relationships || []);
+        this.updateSynergies(synergies);
+        
+        console.log('Step 6: Updating vendor relationships...');
+        this.updateVendorRelationships(vendorRelationships);
+        
+        console.log('Step 7: Updating sidebar components...');
+        this.updateSidebarComponents(festival, artists, vendors);
         
         console.log('=== UPDATE DASHBOARD COMPLETE ===');
     }
 
-    updateFestivalStats(data) {
-        document.getElementById('budgetDisplay').textContent = this.formatCurrency(data.festival.current_budget || data.festival.budget);
+    updateFestivalStats(festival, artists, vendors, tickets) {
+        document.getElementById('budgetDisplay').textContent = this.formatCurrency(festival.current_budget || festival.budget);
         
-        const ticketsSold = data.tickets && Array.isArray(data.tickets) ? 
-            data.tickets.reduce((sum, t) => sum + (t.sold_quantity || 0), 0) : 0;
+        const ticketsSold = tickets.reduce((sum, t) => sum + (t.sold_quantity || 0), 0);
         document.getElementById('ticketsSold').textContent = this.formatNumber(ticketsSold);
         
-        document.getElementById('artistsCount').textContent = data.artists ? data.artists.length : 0;
-        document.getElementById('vendorsCount').textContent = data.vendors ? data.vendors.length : 0;
+        document.getElementById('artistsCount').textContent = artists.length;
+        document.getElementById('vendorsCount').textContent = vendors.length;
     }
 
-    updateDaysRemaining(data) {
-        const daysUntil = data.festival.days_remaining || 365;
+    updateDaysRemaining(festival) {
+        const daysUntil = festival.days_remaining || 365;
         document.getElementById('daysUntilFestival').textContent = daysUntil > 0 ? daysUntil : 'Today!';
     }
 
-    updateLists(data) {
-        this.updateArtistsList(data.artists || []);
-        this.updateVendorsList(data.vendors || []);
-        this.updateEventsList(data.events || []);
+    updateLists(artists, vendors) {
+        this.updateArtistsList(artists);
+        this.updateVendorsList(vendors);
+        this.updateEventsList(artists, vendors);
     }
 
-    updateAnalyticsMetrics(data) {
-        const tickets = data.tickets && Array.isArray(data.tickets) ? data.tickets : [];
+    updateAnalyticsMetrics(festival, artists, vendors, tickets) {
         const totalRevenue = tickets.reduce((sum, ticket) => sum + ((ticket.sold_quantity || 0) * (ticket.price || 0)), 0);
-        const budgetUsed = data.festival.budget > 0 ? 
-            ((data.festival.budget - (data.festival.current_budget || data.festival.budget)) / data.festival.budget * 100).toFixed(1) : 0;
+        const budgetUsed = festival.budget > 0 ? 
+            ((festival.budget - (festival.current_budget || festival.budget)) / festival.budget * 100).toFixed(1) : 0;
         const avgTicketPrice = tickets.length > 0 ? 
             (totalRevenue / tickets.reduce((sum, t) => sum + (t.sold_quantity || 0), 0)).toFixed(2) : 0;
-        const roi = data.festival.budget > 0 ? ((totalRevenue - data.festival.budget) / data.festival.budget * 100).toFixed(1) : 0;
+        const roi = festival.budget > 0 ? ((totalRevenue - festival.budget) / festival.budget * 100).toFixed(1) : 0;
         
         document.getElementById('totalRevenue').textContent = this.formatCurrency(totalRevenue);
         document.getElementById('budgetUsed').textContent = budgetUsed + '%';
@@ -114,10 +125,10 @@ class DashboardManager {
         document.getElementById('roi').textContent = roi + '%';
         
         // Performance Metrics
-        const festivalScore = this.calculateFestivalScore(data);
-        const artistSatisfaction = this.calculateArtistSatisfaction(data);
-        const vendorSatisfaction = this.calculateVendorSatisfaction(data);
-        const marketingEffectiveness = this.calculateMarketingEffectiveness(data);
+        const festivalScore = this.calculateFestivalScore(festival, artists, vendors);
+        const artistSatisfaction = this.calculateArtistSatisfaction(artists);
+        const vendorSatisfaction = this.calculateVendorSatisfaction(vendors);
+        const marketingEffectiveness = this.calculateMarketingEffectiveness(festival, artists, vendors);
         
         document.getElementById('festivalScore').textContent = festivalScore + '/100';
         document.getElementById('artistSatisfactionScore').textContent = artistSatisfaction;
@@ -125,10 +136,10 @@ class DashboardManager {
         document.getElementById('marketingEffectiveness').textContent = marketingEffectiveness + '%';
         
         // Operational Metrics
-        const totalArtists = data.artists ? data.artists.length : 0;
-        const totalVendors = data.vendors ? data.vendors.length : 0;
-        const marketing = data.marketing && Array.isArray(data.marketing) ? data.marketing : [];
-        const events = data.events && Array.isArray(data.events) ? data.events : [];
+        const totalArtists = artists.length;
+        const totalVendors = vendors.length;
+        const marketing = festival.marketing && Array.isArray(festival.marketing) ? festival.marketing : [];
+        const events = festival.events && Array.isArray(festival.events) ? festival.events : [];
         const activeMarketing = marketing.filter(m => m.status === 'active').length;
         const pendingEvents = events.filter(e => !e.resolved).length;
         
@@ -174,9 +185,9 @@ class DashboardManager {
         `).join('');
     }
 
-    updateEventsList(events) {
+    updateEventsList(artists, vendors) {
         const container = document.getElementById('eventsContainer');
-        const unresolvedEvents = events.filter(event => !event.resolved);
+        const unresolvedEvents = artists.concat(vendors).filter(item => !item.resolved);
         
         if (unresolvedEvents.length === 0) {
             container.innerHTML = '<p class="text-muted text-center">No events at the moment.</p>';
@@ -193,137 +204,226 @@ class DashboardManager {
     }
 
     updateSynergies(synergies) {
-        try {
-            const container = document.getElementById('synergiesContainer');
+        const container = document.getElementById('synergiesContainer');
+        if (!container) return;
+
+        if (synergies.length === 0) {
+            container.innerHTML = '<p class="text-muted">No synergies available yet. Hire more artists to unlock synergies!</p>';
+            return;
+        }
+
+        const synergiesHtml = synergies.map(synergy => `
+            <div class="alert alert-success mb-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>${synergy.name}</strong>
+                        <p class="mb-1 small">${synergy.description}</p>
+                        <small class="text-muted">
+                            Artists: ${synergy.artist_count} | 
+                            Marketing Bonus: +${(synergy.marketing_bonus * 100).toFixed(0)}% | 
+                            Reputation Bonus: +${synergy.reputation_bonus}
+                        </small>
+                    </div>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = synergiesHtml;
+    }
+
+    updateVendorRelationships(vendorRelationships) {
+        const container = document.getElementById('vendorRelationshipsContainer');
+        if (!container) return;
+
+        if (vendorRelationships.length === 0) {
+            container.innerHTML = '<p class="text-muted">No vendor relationships to display. Hire more vendors to see relationships!</p>';
+            return;
+        }
+
+        const relationshipsHtml = vendorRelationships.map(relationship => {
+            const alertClass = relationship.type === 'complementary' ? 'alert-success' : 'alert-warning';
+            const icon = relationship.type === 'complementary' ? 'fa-handshake' : 'fa-exclamation-triangle';
             
-            if (!container) {
-                console.warn('Synergies container not found');
-                return;
-            }
-            
-            if (!synergies || synergies.length === 0) {
-                container.innerHTML = '<p class="text-muted">No synergies available yet. Hire more artists to unlock synergies!</p>';
-                return;
-            }
-            
-            container.innerHTML = synergies.map(synergy => `
-                <div class="card mb-3 border-primary">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8 col-sm-12">
-                                <h6 class="card-title text-primary">
-                                    <i class="fas fa-magic me-2"></i>${synergy.name || 'Synergy'}
-                                </h6>
-                                <p class="card-text small mb-2">${synergy.description || 'Genre synergy effect'}</p>
-                                <div class="mb-2">
-                                    <small class="text-muted">
-                                        <strong>Genres:</strong> ${(synergy.genres || []).join(', ')}<br>
-                                        <strong>Artists:</strong> ${synergy.artist_count || 0}
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="col-md-4 col-sm-12 text-end">
-                                <div class="mb-2">
-                                    <div class="badge bg-success mb-1">
-                                        <i class="fas fa-chart-line me-1"></i>+${((synergy.marketing_bonus || 0) * 100).toFixed(0)}% Marketing
-                                    </div>
-                                    <div class="badge bg-info">
-                                        <i class="fas fa-star me-1"></i>+${synergy.reputation_bonus || 0} Reputation
-                                    </div>
-                                </div>
-                            </div>
+            return `
+                <div class="alert ${alertClass} mb-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${relationship.vendor1} & ${relationship.vendor2}</strong>
+                            <p class="mb-1 small">${relationship.effect}</p>
+                            <small class="text-muted">Type: ${relationship.type}</small>
                         </div>
+                        <i class="fas ${icon}"></i>
                     </div>
                 </div>
-            `).join('');
-        } catch (error) {
-            console.error('Error updating synergies:', error);
-        }
+            `;
+        }).join('');
+
+        container.innerHTML = relationshipsHtml;
     }
 
-    updateVendorRelationships(relationships) {
-        try {
-            const container = document.getElementById('vendorRelationshipsContainer');
-            
-            if (!container) {
-                console.warn('Vendor relationships container not found');
-                return;
-            }
-            
-            if (!relationships || relationships.length === 0) {
-                container.innerHTML = '<p class="text-muted">No vendor relationships to display. Hire more vendors to see relationships!</p>';
-                return;
-            }
-            
-            container.innerHTML = relationships.map(relationship => {
-                const isComplementary = relationship.type === 'complementary';
-                const borderClass = isComplementary ? 'border-success' : 'border-warning';
-                const titleClass = isComplementary ? 'text-success' : 'text-warning';
-                const icon = isComplementary ? 'fa-handshake' : 'fa-exclamation-triangle';
-                const bonusText = isComplementary ? 
-                    `+${((relationship.bonus || 0) * 100).toFixed(0)}% Satisfaction` : 
-                    `${((relationship.penalty || 0) * 100).toFixed(0)}% Satisfaction Penalty`;
-                
-                return `
-                    <div class="card mb-3 ${borderClass}">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-8 col-sm-12">
-                                    <h6 class="card-title ${titleClass}">
-                                        <i class="fas ${icon} me-2"></i>${relationship.vendor1 || 'Vendor 1'} & ${relationship.vendor2 || 'Vendor 2'}
-                                    </h6>
-                                    <p class="card-text small mb-2">${relationship.description || 'Vendor relationship effect'}</p>
-                                    <div class="badge ${isComplementary ? 'bg-success' : 'bg-warning'}">
-                                        ${bonusText}
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-sm-12 text-end">
-                                    <div class="mb-2">
-                                        <small class="text-muted">
-                                            <strong>Type:</strong> ${(relationship.type || 'unknown').charAt(0).toUpperCase() + (relationship.type || 'unknown').slice(1)}
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+    updateSidebarComponents(festival, artists, vendors) {
+        // Update events container
+        this.updateEventsContainer();
+        
+        // Update risk assessment
+        this.updateRiskAssessment(festival);
+        
+        // Update marketing recommendations
+        this.updateMarketingRecommendations(festival);
+        
+        // Update approaching artists/vendors
+        this.updateApproachingArtists(artists);
+        this.updateApproachingVendors(vendors);
+    }
+
+    updateEventsContainer() {
+        const container = document.getElementById('eventsContainer');
+        if (!container) return;
+
+        // For now, show a simple message
+        container.innerHTML = '<p class="text-muted text-center">No events at the moment.</p>';
+    }
+
+    updateRiskAssessment(festival) {
+        const container = document.getElementById('riskAssessmentContainer');
+        if (!container) return;
+
+        // Calculate risk based on festival data
+        let riskScore = 0;
+        let riskLevel = 'Low';
+        let riskColor = 'success';
+
+        if (festival.budget < 20000) {
+            riskScore += 30;
+        }
+        if (festival.reputation < 30) {
+            riskScore += 25;
+        }
+        if (festival.days_remaining < 30) {
+            riskScore += 20;
+        }
+
+        if (riskScore > 50) {
+            riskLevel = 'High';
+            riskColor = 'danger';
+        } else if (riskScore > 25) {
+            riskLevel = 'Medium';
+            riskColor = 'warning';
+        }
+
+        container.innerHTML = `
+            <div class="text-center">
+                <div class="badge bg-${riskColor} fs-6 mb-2">${riskLevel} Risk</div>
+                <div class="small text-muted">Risk Score: ${riskScore}/100</div>
+                <div class="mt-2">
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-${riskColor}" style="width: ${riskScore}%"></div>
                     </div>
-                `;
-            }).join('');
-        } catch (error) {
-            console.error('Error updating vendor relationships:', error);
+                </div>
+            </div>
+        `;
+    }
+
+    updateMarketingRecommendations(festival) {
+        const container = document.getElementById('marketingRecommendationsContainer');
+        if (!container) return;
+
+        const recommendations = [];
+
+        if (festival.reputation < 40) {
+            recommendations.push('Focus on reputation-building campaigns');
+        }
+        if (festival.budget > 50000) {
+            recommendations.push('Consider premium marketing campaigns');
+        }
+        if (festival.days_remaining < 60) {
+            recommendations.push('Launch urgent promotional campaigns');
+        }
+
+        if (recommendations.length === 0) {
+            recommendations.push('Your festival is well-positioned!');
+        }
+
+        const recommendationsHtml = recommendations.map(rec => 
+            `<div class="small mb-1"><i class="fas fa-lightbulb text-warning me-1"></i>${rec}</div>`
+        ).join('');
+
+        container.innerHTML = recommendationsHtml;
+    }
+
+    updateApproachingArtists(artists) {
+        const card = document.getElementById('approachingArtistsCard');
+        const list = document.getElementById('approachingArtistsList');
+        
+        if (!card || !list) return;
+
+        // Show card if there are artists with high popularity
+        const approachingArtists = artists.filter(a => a.popularity > 80);
+        
+        if (approachingArtists.length > 0) {
+            card.style.display = 'block';
+            const artistsHtml = approachingArtists.map(artist => `
+                <div class="small mb-2">
+                    <strong>${artist.name}</strong> (${artist.popularity}/100)
+                    <br><small class="text-muted">${artist.genre}</small>
+                </div>
+            `).join('');
+            list.innerHTML = artistsHtml;
+        } else {
+            card.style.display = 'none';
         }
     }
 
-    calculateFestivalScore(data) {
+    updateApproachingVendors(vendors) {
+        const card = document.getElementById('approachingVendorsCard');
+        const list = document.getElementById('approachingVendorsList');
+        
+        if (!card || !list) return;
+
+        // Show card if there are vendors with high quality
+        const approachingVendors = vendors.filter(v => v.quality > 85);
+        
+        if (approachingVendors.length > 0) {
+            card.style.display = 'block';
+            const vendorsHtml = approachingVendors.map(vendor => `
+                <div class="small mb-2">
+                    <strong>${vendor.name}</strong> (${vendor.quality}/100)
+                    <br><small class="text-muted">${vendor.specialty}</small>
+                </div>
+            `).join('');
+            list.innerHTML = vendorsHtml;
+        } else {
+            card.style.display = 'none';
+        }
+    }
+
+    calculateFestivalScore(festival, artists, vendors) {
         let score = 0;
         
-        const currentBudget = data.festival.current_budget || data.festival.budget;
-        const budgetEfficiency = data.festival.budget > 0 ? (currentBudget / data.festival.budget) * 100 : 0;
+        const currentBudget = festival.current_budget || festival.budget;
+        const budgetEfficiency = festival.budget > 0 ? (currentBudget / festival.budget) * 100 : 0;
         score += Math.min(budgetEfficiency, 25);
         
-        const artists = data.artists && Array.isArray(data.artists) ? data.artists : [];
         if (artists.length > 0) {
             const avgArtistPopularity = artists.reduce((sum, artist) => sum + (artist.popularity || 0), 0) / artists.length;
             score += (avgArtistPopularity / 100) * 25;
         }
         
-        const vendors = data.vendors && Array.isArray(data.vendors) ? data.vendors : [];
         const vendorCategories = new Set(vendors.map(v => v.category || v.type || 'unknown'));
         score += Math.min(vendorCategories.size * 5, 20);
         
-        const marketing = data.marketing && Array.isArray(data.marketing) ? data.marketing : [];
+        const marketing = festival.marketing && Array.isArray(festival.marketing) ? festival.marketing : [];
         const activeMarketing = marketing.filter(m => m.status === 'active');
         score += Math.min(activeMarketing.length * 5, 15);
         
-        const tickets = data.tickets && Array.isArray(data.tickets) ? data.tickets : [];
-        const totalTickets = tickets.reduce((sum, t) => sum + (t.sold_quantity || 0), 0);
+        const totalTickets = artists.concat(vendors).reduce((sum, item) => sum + (item.sold_quantity || 0), 0);
         score += Math.min(totalTickets / 10, 15);
         
         return Math.round(score);
     }
 
-    calculateArtistSatisfaction(data) {
-        const artists = data.artists && Array.isArray(data.artists) ? data.artists : [];
+    calculateArtistSatisfaction(artists) {
         if (artists.length === 0) return 'N/A';
         
         const confirmedArtists = artists.filter(a => a.status === 'confirmed');
@@ -335,8 +435,7 @@ class DashboardManager {
         return 'Poor';
     }
 
-    calculateVendorSatisfaction(data) {
-        const vendors = data.vendors && Array.isArray(data.vendors) ? data.vendors : [];
+    calculateVendorSatisfaction(vendors) {
         if (vendors.length === 0) return 'N/A';
         
         const confirmedVendors = vendors.filter(v => v.status === 'confirmed');
@@ -348,8 +447,8 @@ class DashboardManager {
         return 'Poor';
     }
 
-    calculateMarketingEffectiveness(data) {
-        const marketing = data.marketing && Array.isArray(data.marketing) ? data.marketing : [];
+    calculateMarketingEffectiveness(festival, artists, vendors) {
+        const marketing = festival.marketing && Array.isArray(festival.marketing) ? festival.marketing : [];
         const activeMarketing = marketing.filter(m => m.status === 'active');
         let baseEffectiveness = 100;
         
@@ -359,7 +458,7 @@ class DashboardManager {
         }
         
         let synergyBonus = 0;
-        const synergies = data.synergies && Array.isArray(data.synergies) ? data.synergies : [];
+        const synergies = festival.synergies && Array.isArray(festival.synergies) ? festival.synergies : [];
         if (synergies.length > 0) {
             synergyBonus = synergies.reduce((sum, synergy) => sum + ((synergy.marketing_bonus || 0) * 100), 0);
         }
