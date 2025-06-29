@@ -136,10 +136,19 @@ def get_festival_data(festival_id):
                 'name': vendor.name,
                 'category': vendor.specialty,
                 'type': vendor.specialty,
+                'specialty': vendor.specialty,
                 'quality': vendor.quality,
                 'cost': vendor.cost,
                 'revenue': vendor.revenue,
-                'status': 'confirmed'  # Default status
+                'status': 'confirmed',  # Default status
+                'vendor_specialties': json.loads(vendor.vendor_specialties) if vendor.vendor_specialties else [],
+                'placement_location': vendor.placement_location,
+                'customer_satisfaction': vendor.customer_satisfaction,
+                'food_allergy_support': json.loads(vendor.food_allergy_support) if vendor.food_allergy_support else {},
+                'alcohol_license': vendor.alcohol_license,
+                'local_sourcing': vendor.local_sourcing,
+                'sustainability_rating': vendor.sustainability_rating,
+                'menu_items': json.loads(vendor.menu_items) if vendor.menu_items else []
             } for vendor in vendors
         ],
         'tickets': [
@@ -304,27 +313,42 @@ def hire_artist_endpoint():
 @app.route('/api/vendors/hire', methods=['POST'])
 def hire_vendor_endpoint():
     """Hire a vendor"""
-    data = request.get_json()
-    festival_id = data.get('festival_id', 1)  # Default to festival 1
-    vendor_id = data.get('vendor_id')
-    
-    if not vendor_id:
-        return jsonify({'success': False, 'error': 'Vendor ID required'}), 400
-    
-    # Get the vendor data from cached available vendors using the same count as display
-    vendors = get_cached_vendors(5)  # Use same count as display endpoint
-    vendor = next((v for v in vendors if v['id'] == vendor_id), None)
-    
-    if not vendor:
-        return jsonify({'success': False, 'error': 'Vendor not found'}), 404
-    
-    result = game_coordinator.hire_vendor(festival_id, vendor)
-    
-    # Clear the cache after hiring to refresh the available vendors
-    if result.get('success'):
-        clear_vendor_cache()
-    
-    return jsonify(result)
+    try:
+        data = request.get_json()
+        vendor_id = data.get('vendor_id')
+        festival_id = data.get('festival_id')
+        placement_location = data.get('placement_location', 'Food Court')
+        
+        if not vendor_id or not festival_id:
+            return jsonify({'success': False, 'error': 'Missing vendor_id or festival_id'})
+        
+        # Get available vendors
+        available_vendors = get_cached_vendors(10)  # Get more vendors to find the one we want
+        vendor = None
+        
+        for v in available_vendors:
+            if v['id'] == vendor_id:
+                vendor = v
+                break
+        
+        if not vendor:
+            return jsonify({'success': False, 'error': 'Vendor not found'})
+        
+        # Set the placement location
+        vendor['placement_location'] = placement_location
+        
+        # Hire the vendor
+        result = game_coordinator.hire_vendor(festival_id, vendor)
+        
+        if result['success']:
+            # Clear vendor cache to get fresh vendors
+            clear_vendor_cache()
+            
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error hiring vendor: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/marketing/launch', methods=['POST'])
 def launch_marketing_campaign():
@@ -381,9 +405,245 @@ def get_artist_synergies(festival_id):
 
 @app.route('/api/vendors/relationships/<int:festival_id>')
 def get_vendor_relationships(festival_id):
-    """Get vendor relationships"""
-    relationships = game_coordinator.vendor_system.calculate_vendor_relationships(festival_id)
-    return jsonify(relationships)
+    """Get vendor relationships and their effects"""
+    vendor_relationships = game_coordinator.vendor_system.calculate_vendor_relationships(festival_id)
+    return jsonify(vendor_relationships)
+
+@app.route('/api/vendors/quality_analysis/<int:festival_id>')
+def get_vendor_quality_analysis(festival_id):
+    """Get comprehensive vendor quality analysis"""
+    vendors = Vendor.query.filter_by(festival_id=festival_id).all()
+    
+    quality_analysis = []
+    for vendor in vendors:
+        quality_score = game_coordinator.vendor_system.calculate_advanced_vendor_quality_score(vendor)
+        satisfaction_score = game_coordinator.vendor_system.calculate_advanced_vendor_satisfaction(vendor, 10000)
+        
+        quality_analysis.append({
+            'vendor_id': vendor.id,
+            'vendor_name': vendor.name,
+            'specialty': vendor.specialty,
+            'base_quality': vendor.quality,
+            'advanced_quality_score': quality_score,
+            'customer_satisfaction': satisfaction_score,
+            'specialties': json.loads(vendor.vendor_specialties) if vendor.vendor_specialties else [],
+            'allergy_support': json.loads(vendor.food_allergy_support) if vendor.food_allergy_support else {},
+            'placement_location': vendor.placement_location,
+            'local_sourcing': vendor.local_sourcing,
+            'sustainability_rating': vendor.sustainability_rating,
+            'alcohol_license': vendor.alcohol_license
+        })
+    
+    return jsonify(quality_analysis)
+
+@app.route('/api/vendors/placement_optimization/<int:festival_id>')
+def get_placement_optimization(festival_id):
+    """Get vendor placement optimization recommendations"""
+    vendors = Vendor.query.filter_by(festival_id=festival_id).all()
+    
+    placement_analysis = []
+    for vendor in vendors:
+        current_placement = vendor.placement_location or 'Food Court'
+        optimal_placement = game_coordinator.vendor_system.optimize_vendor_placement(vendor.specialty)
+        competition_penalty = game_coordinator.vendor_system.calculate_competition_penalty(
+            festival_id, vendor.specialty, current_placement
+        )
+        
+        placement_analysis.append({
+            'vendor_id': vendor.id,
+            'vendor_name': vendor.name,
+            'specialty': vendor.specialty,
+            'current_placement': current_placement,
+            'optimal_placement': optimal_placement,
+            'competition_penalty': competition_penalty,
+            'placement_suitable': vendor.specialty in game_coordinator.vendor_system.placement_locations.get(current_placement, {}).get('suitable_vendors', [])
+        })
+    
+    return jsonify(placement_analysis)
+
+@app.route('/api/vendors/specialties/<int:festival_id>')
+def get_vendor_specialties_analysis(festival_id):
+    """Get vendor specialties analysis and recommendations"""
+    vendors = Vendor.query.filter_by(festival_id=festival_id).all()
+    
+    specialties_analysis = {
+        'vendor_specialties': [],
+        'specialty_coverage': {},
+        'recommendations': []
+    }
+    
+    # Analyze each vendor's specialties
+    for vendor in vendors:
+        specialties = json.loads(vendor.vendor_specialties) if vendor.vendor_specialties else []
+        allergy_support = json.loads(vendor.food_allergy_support) if vendor.food_allergy_support else {}
+        
+        specialties_analysis['vendor_specialties'].append({
+            'vendor_id': vendor.id,
+            'vendor_name': vendor.name,
+            'specialty': vendor.specialty,
+            'advanced_specialties': specialties,
+            'allergy_support': allergy_support,
+            'local_sourcing': vendor.local_sourcing,
+            'sustainability_rating': vendor.sustainability_rating
+        })
+        
+        # Count specialty coverage
+        for specialty in specialties:
+            if specialty not in specialties_analysis['specialty_coverage']:
+                specialties_analysis['specialty_coverage'][specialty] = 0
+            specialties_analysis['specialty_coverage'][specialty] += 1
+    
+    # Generate recommendations
+    all_specialties = list(game_coordinator.vendor_system.advanced_specialties.keys())
+    missing_specialties = [spec for spec in all_specialties if spec not in specialties_analysis['specialty_coverage']]
+    
+    if missing_specialties:
+        specialties_analysis['recommendations'].append({
+            'type': 'missing_specialties',
+            'message': f'Consider adding vendors with these specialties: {", ".join(missing_specialties)}',
+            'specialties': missing_specialties
+        })
+    
+    # Check for allergy support gaps
+    allergy_levels = ['basic', 'comprehensive', 'dedicated']
+    allergy_coverage = {}
+    for vendor in vendors:
+        allergy_support = json.loads(vendor.food_allergy_support) if vendor.food_allergy_support else {}
+        level = allergy_support.get('level', 'basic')
+        if level not in allergy_coverage:
+            allergy_coverage[level] = 0
+        allergy_coverage[level] += 1
+    
+    if allergy_coverage.get('dedicated', 0) == 0:
+        specialties_analysis['recommendations'].append({
+            'type': 'allergy_support',
+            'message': 'Consider adding vendors with dedicated allergen-free preparation',
+            'priority': 'high'
+        })
+    
+    return jsonify(specialties_analysis)
+
+@app.route('/api/vendors/competition_analysis/<int:festival_id>')
+def get_competition_analysis(festival_id):
+    """Get vendor competition analysis"""
+    vendors = Vendor.query.filter_by(festival_id=festival_id).all()
+    
+    competition_analysis = {
+        'overall_competition': 0,
+        'vendor_competition': [],
+        'placement_competition': {},
+        'recommendations': []
+    }
+    
+    # Analyze competition by specialty
+    specialty_counts = {}
+    placement_counts = {}
+    
+    for vendor in vendors:
+        # Count by specialty
+        if vendor.specialty not in specialty_counts:
+            specialty_counts[vendor.specialty] = 0
+        specialty_counts[vendor.specialty] += 1
+        
+        # Count by placement
+        placement = vendor.placement_location or 'Food Court'
+        if placement not in placement_counts:
+            placement_counts[placement] = 0
+        placement_counts[placement] += 1
+    
+    # Calculate competition scores
+    total_competition = 0
+    for vendor in vendors:
+        specialty_competition = specialty_counts.get(vendor.specialty, 0) - 1  # Exclude self
+        placement_competition = placement_counts.get(vendor.placement_location or 'Food Court', 0) - 1
+        
+        competition_score = (specialty_competition * 0.6) + (placement_competition * 0.4)
+        total_competition += competition_score
+        
+        competition_analysis['vendor_competition'].append({
+            'vendor_id': vendor.id,
+            'vendor_name': vendor.name,
+            'specialty': vendor.specialty,
+            'placement': vendor.placement_location or 'Food Court',
+            'specialty_competition': specialty_competition,
+            'placement_competition': placement_competition,
+            'total_competition_score': competition_score
+        })
+    
+    competition_analysis['overall_competition'] = total_competition / len(vendors) if vendors else 0
+    competition_analysis['placement_competition'] = placement_counts
+    
+    # Generate recommendations
+    high_competition_specialties = [spec for spec, count in specialty_counts.items() if count > 2]
+    if high_competition_specialties:
+        competition_analysis['recommendations'].append({
+            'type': 'high_competition',
+            'message': f'High competition detected for: {", ".join(high_competition_specialties)}',
+            'specialties': high_competition_specialties
+        })
+    
+    return jsonify(competition_analysis)
+
+@app.route('/api/vendors/menu_planning/<int:festival_id>')
+def get_menu_planning_analysis(festival_id):
+    """Get menu planning and food strategy analysis"""
+    vendors = Vendor.query.filter_by(festival_id=festival_id).all()
+    
+    menu_analysis = {
+        'menu_coverage': {},
+        'allergen_coverage': {},
+        'price_ranges': {},
+        'recommendations': []
+    }
+    
+    # Analyze menu coverage
+    for vendor in vendors:
+        menu_items = json.loads(vendor.menu_items) if vendor.menu_items else []
+        
+        for item in menu_items:
+            category = item.get('category', 'Other')
+            if category not in menu_analysis['menu_coverage']:
+                menu_analysis['menu_coverage'][category] = 0
+            menu_analysis['menu_coverage'][category] += 1
+            
+            # Analyze allergens
+            allergens = item.get('allergens', [])
+            for allergen in allergens:
+                if allergen not in menu_analysis['allergen_coverage']:
+                    menu_analysis['allergen_coverage'][allergen] = 0
+                menu_analysis['allergen_coverage'][allergen] += 1
+            
+            # Analyze price ranges
+            price = item.get('price', 0)
+            if category not in menu_analysis['price_ranges']:
+                menu_analysis['price_ranges'][category] = {'min': price, 'max': price, 'avg': price, 'count': 1}
+            else:
+                price_data = menu_analysis['price_ranges'][category]
+                price_data['min'] = min(price_data['min'], price)
+                price_data['max'] = max(price_data['max'], price)
+                price_data['count'] += 1
+                price_data['avg'] = (price_data['avg'] * (price_data['count'] - 1) + price) / price_data['count']
+    
+    # Generate recommendations
+    essential_categories = ['Main Course', 'Beverages', 'Desserts']
+    missing_categories = [cat for cat in essential_categories if cat not in menu_analysis['menu_coverage']]
+    
+    if missing_categories:
+        menu_analysis['recommendations'].append({
+            'type': 'missing_categories',
+            'message': f'Consider adding vendors with these categories: {", ".join(missing_categories)}',
+            'categories': missing_categories
+        })
+    
+    # Check for dietary restrictions
+    if 'Vegan' not in menu_analysis['menu_coverage']:
+        menu_analysis['recommendations'].append({
+            'type': 'dietary_restrictions',
+            'message': 'Consider adding vegan/vegetarian options',
+            'priority': 'medium'
+        })
+    
+    return jsonify(menu_analysis)
 
 @app.route('/api/artists/assign_slot/<int:festival_id>', methods=['POST'])
 def assign_performance_slot(festival_id):
@@ -580,6 +840,46 @@ def respond_to_event(festival_id):
         'new_budget': festival.budget,
         'new_reputation': festival.reputation
     })
+
+@app.route('/api/vendors/fire', methods=['POST'])
+def fire_vendor_endpoint():
+    """Fire a vendor"""
+    try:
+        data = request.get_json()
+        vendor_id = data.get('vendor_id')
+        festival_id = data.get('festival_id')
+        
+        if not vendor_id or not festival_id:
+            return jsonify({'success': False, 'error': 'Missing vendor_id or festival_id'})
+        
+        # Get the vendor
+        vendor = Vendor.query.filter_by(id=vendor_id, festival_id=festival_id).first()
+        
+        if not vendor:
+            return jsonify({'success': False, 'error': 'Vendor not found'})
+        
+        # Calculate refund (50% of original cost)
+        refund_amount = vendor.cost * 0.5
+        
+        # Update festival budget
+        festival = Festival.query.get(festival_id)
+        if festival:
+            festival.budget += refund_amount
+        
+        # Delete the vendor
+        db.session.delete(vendor)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Vendor fired successfully. Refunded ${refund_amount:,.0f}',
+            'refund_amount': refund_amount,
+            'remaining_budget': festival.budget if festival else 0
+        })
+        
+    except Exception as e:
+        print(f"Error firing vendor: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 # Socket.IO event handlers
 @socketio.on('connect')

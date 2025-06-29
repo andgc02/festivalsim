@@ -2,6 +2,7 @@
 {% from "components/stats_card.html" import stats_card %}
 {% from "components/analytics_card.html" import analytics_card, metric_item %}
 {% from "components/sidebar_card.html" import sidebar_card %}
+{% from "components/vendor_management_card.html" import vendor_management_card %}
 
 {% block title %}{{ festival.name }} - Festival Simulator{% endblock %}
 
@@ -229,19 +230,8 @@
             </div>
         </div>
 
-        <!-- Vendor Relationships -->
-        <div class="card mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="fas fa-handshake me-2"></i>Vendor Relationships
-                </h5>
-            </div>
-            <div class="card-body">
-                <div id="vendorRelationshipsContainer">
-                    <p class="text-muted">No vendor relationships to display. Hire more vendors to see relationships!</p>
-                </div>
-            </div>
-        </div>
+        <!-- Advanced Vendor Management -->
+        {{ vendor_management_card(festival.id) }}
     </div>
 
     <!-- Right Column -->
@@ -358,6 +348,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up periodic data refresh
     setInterval(() => dashboardManager.loadFestivalData(), 60000);
+    
+    // Format all stats numbers
+    formatStatsNumbers();
 });
 
 // Global functions that interact with the dashboard manager
@@ -376,6 +369,8 @@ async function advanceTime() {
         
         if (result.success) {
             showAlert('Time advanced successfully!', 'success');
+            
+            // Refresh dashboard data immediately
             await dashboardManager.loadFestivalData(true);
         } else {
             showAlert('Failed to advance time: ' + result.error, 'danger');
@@ -466,21 +461,69 @@ async function loadAvailableVendors() {
         const vendors = await apiCall('/api/vendors');
         const container = document.getElementById('availableVendorsList');
         
-        container.innerHTML = vendors.map(vendor => `
+        container.innerHTML = vendors.map(vendor => {
+            // Advanced specialties badges - handle cases where it might not be an array
+            let specialtiesHtml = '';
+            if (vendor.vendor_specialties && Array.isArray(vendor.vendor_specialties) && vendor.vendor_specialties.length > 0) {
+                specialtiesHtml = vendor.vendor_specialties.map(s => `<span class='badge bg-info me-1'>${s.replace('_',' ').toUpperCase()}</span>`).join(' ');
+            }
+            
+            // Allergy support - handle cases where it might not be an object
+            let allergyHtml = '';
+            if (vendor.food_allergy_support && typeof vendor.food_allergy_support === 'object' && vendor.food_allergy_support.level) {
+                allergyHtml = `<span class='badge bg-warning me-1'>${vendor.food_allergy_support.level.toUpperCase()}</span>`;
+            }
+            
+            // Alcohol, local, sustainability - handle undefined values
+            let tags = [];
+            if (vendor.alcohol_license) tags.push('<span class="badge bg-danger me-1">Alcohol</span>');
+            if (vendor.local_sourcing) tags.push('<span class="badge bg-success me-1">Local</span>');
+            if (vendor.sustainability_rating && vendor.sustainability_rating > 70) tags.push('<span class="badge bg-success me-1">Eco</span>');
+            
+            // Placement recommendation
+            let placement = vendor.placement_location || 'Food Court';
+            
+            // Menu highlights - handle cases where it might not be an array
+            let menuHtml = '';
+            if (vendor.menu_items && Array.isArray(vendor.menu_items) && vendor.menu_items.length > 0) {
+                const items = vendor.menu_items.slice(0,2).map(item => {
+                    const allergens = item.allergens && Array.isArray(item.allergens) ? item.allergens.join(', ') : '';
+                    return `<li>${item.name} <small class='text-muted'>[${allergens}]</small></li>`;
+                }).join('');
+                menuHtml = `<ul class='mb-1 small'>${items}</ul>`;
+            }
+            
+            // Placement options
+            const placementOptions = [
+                'Main Stage', 'Food Court', 'VIP Area', 'Secondary Stage', 
+                'Entrance Area', 'Camping Area', 'Merchandise Area'
+            ].map(option => 
+                `<option value="${option}" ${option === placement ? 'selected' : ''}>${option}</option>`
+            ).join('');
+            
+            return `
             <div class="card mb-3">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-8">
                             <h5 class="card-title">${vendor.name}</h5>
-                            <p class="card-text">
-                                <strong>Type:</strong> ${vendor.type}<br>
-                                <strong>Category:</strong> ${vendor.category}<br>
-                                <strong>Commission Rate:</strong> ${(vendor.commission_rate * 100).toFixed(1)}%
+                            <p class="card-text mb-1">
+                                <strong>Specialty:</strong> ${vendor.specialty || vendor.type || vendor.category}<br>
+                                <small class="text-muted">${vendor.description || ''}</small><br>
+                                ${specialtiesHtml} ${tags.join(' ')} ${allergyHtml}
                             </p>
+                            <p class="mb-1"><strong>Quality:</strong> ${vendor.quality || 50}/100</p>
+                            <p class="mb-1"><strong>Menu:</strong> ${menuHtml}</p>
+                            <div class="mb-2">
+                                <label class="form-label small"><strong>Placement:</strong></label>
+                                <select class="form-select form-select-sm" id="placement-${vendor.id}" style="width: 200px;">
+                                    ${placementOptions}
+                                </select>
+                            </div>
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="mb-2">
-                                <strong class="text-primary">${formatCurrency(vendor.fee)}</strong>
+                                <strong class="text-primary">${formatCurrency(vendor.fee || vendor.cost)}</strong>
                             </div>
                             <button class="btn btn-success" onclick="hireVendor(${vendor.id})">
                                 <i class="fas fa-plus me-2"></i>Hire Vendor
@@ -489,7 +532,8 @@ async function loadAvailableVendors() {
                     </div>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
         console.log('Vendors loaded successfully');
     } catch (error) {
         console.error('Error loading vendors:', error);
@@ -548,7 +592,11 @@ async function hireArtist(artistId) {
         if (result.success) {
             showAlert('Artist hired successfully!', 'success');
             bootstrap.Modal.getInstance(document.getElementById('artistsModal')).hide();
-            await dashboardManager.loadFestivalData(true);
+            
+            // Refresh dashboard data immediately
+            if (dashboardManager) {
+                await dashboardManager.loadFestivalData(true);
+            }
         } else {
             if (result.error && result.error.includes('Insufficient budget')) {
                 showAlert('Insufficient budget to hire this artist!', 'danger');
@@ -568,15 +616,25 @@ async function hireVendor(vendorId) {
     try {
         console.log('Hiring vendor:', vendorId);
         showLoading();
+        
+        // Get selected placement
+        const placementSelect = document.getElementById(`placement-${vendorId}`);
+        const selectedPlacement = placementSelect ? placementSelect.value : 'Food Court';
+        
         const result = await apiCall('/api/vendors/hire', 'POST', { 
             vendor_id: vendorId,
-            festival_id: dashboardManager ? dashboardManager.festivalId : 1
+            festival_id: dashboardManager ? dashboardManager.festivalId : 1,
+            placement_location: selectedPlacement
         });
         
         if (result.success) {
             showAlert('Vendor hired successfully!', 'success');
             bootstrap.Modal.getInstance(document.getElementById('vendorsModal')).hide();
-            await dashboardManager.loadFestivalData(true);
+            
+            // Refresh dashboard data immediately
+            if (dashboardManager) {
+                await dashboardManager.loadFestivalData(true);
+            }
         } else {
             if (result.error && result.error.includes('Insufficient budget')) {
                 showAlert('Insufficient budget to hire this vendor!', 'danger');
@@ -684,12 +742,46 @@ function updatePauseMenuInfo() {
 
 // Utility functions
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(amount || 0);
+    if (!amount || amount === 0) return '$0';
+    
+    const num = parseFloat(amount);
+    
+    // Handle very large numbers with abbreviations
+    if (num >= 1e12) {
+        return '$' + (num / 1e12).toFixed(1) + 'T';
+    } else if (num >= 1e9) {
+        return '$' + (num / 1e9).toFixed(1) + 'B';
+    } else if (num >= 1e6) {
+        return '$' + (num / 1e6).toFixed(1) + 'M';
+    } else if (num >= 1e3) {
+        return '$' + (num / 1e3).toFixed(1) + 'K';
+    } else {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(num);
+    }
+}
+
+function formatNumber(num) {
+    if (!num || num === 0) return '0';
+    
+    const number = parseFloat(num);
+    
+    // Handle very large numbers with abbreviations
+    if (number >= 1e12) {
+        return (number / 1e12).toFixed(1) + 'T';
+    } else if (number >= 1e9) {
+        return (number / 1e9).toFixed(1) + 'B';
+    } else if (number >= 1e6) {
+        return (number / 1e6).toFixed(1) + 'M';
+    } else if (number >= 1e3) {
+        return (number / 1e3).toFixed(1) + 'K';
+    } else {
+        return new Intl.NumberFormat('en-US').format(number);
+    }
 }
 
 function showLoading() {
@@ -773,6 +865,31 @@ function setupModalFocusManagement() {
     });
 }
 
+// Function to format all stats numbers
+function formatStatsNumbers() {
+    const statsElements = document.querySelectorAll('.stats-number');
+    statsElements.forEach(element => {
+        const value = parseFloat(element.getAttribute('data-value') || element.textContent);
+        const formatType = element.getAttribute('data-format') || 'number';
+        
+        if (!isNaN(value)) {
+            let formattedValue;
+            if (formatType === 'currency') {
+                formattedValue = formatCurrency(value);
+            } else {
+                formattedValue = formatNumber(value);
+            }
+            
+            const formattedSpan = element.querySelector('.formatted-value');
+            if (formattedSpan) {
+                formattedSpan.textContent = formattedValue;
+            } else {
+                element.textContent = formattedValue;
+            }
+        }
+    });
+}
+
 // Initialize modal focus management when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     setupModalFocusManagement();
@@ -838,6 +955,38 @@ function forceButtonColors() {
             button.style.color = '#fff';
         }
     });
+}
+
+async function fireVendor(vendorId) {
+    try {
+        if (!confirm('Are you sure you want to fire this vendor? This action cannot be undone.')) {
+            return;
+        }
+        
+        console.log('Firing vendor:', vendorId);
+        showLoading();
+        
+        const result = await apiCall('/api/vendors/fire', 'POST', { 
+            vendor_id: vendorId,
+            festival_id: dashboardManager ? dashboardManager.festivalId : 1
+        });
+        
+        if (result.success) {
+            showAlert('Vendor fired successfully!', 'success');
+            
+            // Refresh dashboard data immediately
+            if (dashboardManager) {
+                await dashboardManager.loadFestivalData(true);
+            }
+        } else {
+            showAlert(result.error || 'Failed to fire vendor', 'danger');
+        }
+    } catch (error) {
+        console.error('Error firing vendor:', error);
+        showAlert('Error firing vendor: ' + error.message, 'danger');
+    } finally {
+        hideLoading();
+    }
 }
 </script>
 {% endblock %}

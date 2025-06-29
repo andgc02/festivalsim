@@ -82,6 +82,17 @@ class Vendor(db.Model):
     menu_items = db.Column(db.Text)  # JSON string of menu items
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Advanced vendor management fields
+    vendor_specialties = db.Column(db.Text)  # JSON string of specialties (vegan, gluten-free, local, etc.)
+    vendor_relationships = db.Column(db.Text)  # JSON string of vendor IDs this vendor works well with
+    vendor_conflicts = db.Column(db.Text)  # JSON string of vendor IDs this vendor conflicts with
+    placement_location = db.Column(db.String(50))  # Main Stage, Food Court, VIP Area, etc.
+    customer_satisfaction = db.Column(db.Float, default=0.0)  # 0-100 scale
+    food_allergy_support = db.Column(db.Text)  # JSON string of supported dietary restrictions
+    alcohol_license = db.Column(db.Boolean, default=False)  # Whether vendor can serve alcohol
+    local_sourcing = db.Column(db.Boolean, default=False)  # Whether vendor uses local ingredients
+    sustainability_rating = db.Column(db.Integer, default=50)  # 1-100 scale for eco-friendliness
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -92,5 +103,14 @@ class Vendor(db.Model):
             'cost': self.cost,
             'revenue': self.revenue,
             'menu_items': json.loads(self.menu_items) if self.menu_items else [],
+            'vendor_specialties': json.loads(self.vendor_specialties) if self.vendor_specialties else [],
+            'vendor_relationships': json.loads(self.vendor_relationships) if self.vendor_relationships else [],
+            'vendor_conflicts': json.loads(self.vendor_conflicts) if self.vendor_conflicts else [],
+            'placement_location': self.placement_location,
+            'customer_satisfaction': self.customer_satisfaction,
+            'food_allergy_support': json.loads(self.food_allergy_support) if self.food_allergy_support else [],
+            'alcohol_license': self.alcohol_license,
+            'local_sourcing': self.local_sourcing,
+            'sustainability_rating': self.sustainability_rating,
             'created_at': self.created_at.isoformat() if self.created_at else None
         } 

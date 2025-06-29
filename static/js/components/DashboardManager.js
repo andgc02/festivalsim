@@ -174,15 +174,36 @@ class DashboardManager {
             return;
         }
         
-        container.innerHTML = vendors.map(vendor => `
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <div>
-                    <strong>${vendor.name}</strong><br>
-                    <small class="text-muted">${vendor.category} • ${vendor.type}</small>
+        container.innerHTML = vendors.map(vendor => {
+            // Get vendor specialties if available
+            let specialtiesHtml = '';
+            if (vendor.vendor_specialties && vendor.vendor_specialties.length > 0) {
+                specialtiesHtml = vendor.vendor_specialties.map(s => `<span class='badge bg-info me-1 small'>${s.replace('_',' ').toUpperCase()}</span>`).join(' ');
+            }
+            
+            // Get placement
+            const placement = vendor.placement_location || 'Food Court';
+            
+            return `
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${vendor.name}</strong><br>
+                            <small class="text-muted">${vendor.specialty || vendor.category} • Quality: ${vendor.quality}/100</small><br>
+                            <small class="text-muted">Placement: ${placement}</small>
+                            ${specialtiesHtml ? `<br>${specialtiesHtml}` : ''}
+                        </div>
+                        <div class="ms-2">
+                            <button class="btn btn-sm btn-outline-danger" onclick="fireVendor(${vendor.id})" title="Fire Vendor">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <span class="badge bg-${vendor.status === 'confirmed' ? 'success' : 'warning'}">${vendor.status}</span>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     updateEventsList(artists, vendors) {
@@ -607,16 +628,46 @@ class DashboardManager {
     }
 
     formatCurrency(amount) {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(amount || 0);
+        if (!amount || amount === 0) return '$0';
+        
+        const num = parseFloat(amount);
+        
+        // Handle very large numbers with abbreviations
+        if (num >= 1e12) {
+            return '$' + (num / 1e12).toFixed(1) + 'T';
+        } else if (num >= 1e9) {
+            return '$' + (num / 1e9).toFixed(1) + 'B';
+        } else if (num >= 1e6) {
+            return '$' + (num / 1e6).toFixed(1) + 'M';
+        } else if (num >= 1e3) {
+            return '$' + (num / 1e3).toFixed(1) + 'K';
+        } else {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(num);
+        }
     }
 
     formatNumber(num) {
-        return new Intl.NumberFormat('en-US').format(num || 0);
+        if (!num || num === 0) return '0';
+        
+        const number = parseFloat(num);
+        
+        // Handle very large numbers with abbreviations
+        if (number >= 1e12) {
+            return (number / 1e12).toFixed(1) + 'T';
+        } else if (number >= 1e9) {
+            return (number / 1e9).toFixed(1) + 'B';
+        } else if (number >= 1e6) {
+            return (number / 1e6).toFixed(1) + 'M';
+        } else if (number >= 1e3) {
+            return (number / 1e3).toFixed(1) + 'K';
+        } else {
+            return new Intl.NumberFormat('en-US').format(number);
+        }
     }
 
     showAlert(message, type = 'info') {

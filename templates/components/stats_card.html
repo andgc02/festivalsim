@@ -1,7 +1,13 @@
-{% macro stats_card(id, value, label, icon="", color="primary") %}
+{% macro stats_card(id, value, label, icon="", color="primary", format_type="number") %}
 <div class="col-md-2">
     <div class="stats-card">
-        <div class="stats-number" id="{{ id }}">{{ value }}</div>
+        <div class="stats-number" id="{{ id }}" data-value="{{ value }}" data-format="{{ format_type }}">
+            {% if format_type == "currency" %}
+                <span class="formatted-value">{{ value }}</span>
+            {% else %}
+                <span class="formatted-value">{{ value }}</span>
+            {% endif %}
+        </div>
         <div class="stats-label">
             {% if icon %}<i class="fas {{ icon }} me-1"></i>{% endif %}{{ label }}
         </div>

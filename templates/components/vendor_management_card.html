@@ -1,0 +1,637 @@
+{% macro vendor_management_card(festival_id) %}
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-store me-2"></i>Advanced Vendor Management
+        </h5>
+    </div>
+    <div class="card-body">
+        <!-- Vendor Management Tabs -->
+        <ul class="nav nav-tabs" id="vendorManagementTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="relationships-tab" data-bs-toggle="tab" data-bs-target="#relationships" type="button" role="tab">
+                    <i class="fas fa-handshake me-2"></i>Relationships
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="quality-tab" data-bs-toggle="tab" data-bs-target="#quality" type="button" role="tab">
+                    <i class="fas fa-star me-2"></i>Quality Analysis
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="placement-tab" data-bs-toggle="tab" data-bs-target="#placement" type="button" role="tab">
+                    <i class="fas fa-map-marker-alt me-2"></i>Placement
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="specialties-tab" data-bs-toggle="tab" data-bs-target="#specialties" type="button" role="tab">
+                    <i class="fas fa-tags me-2"></i>Specialties
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="competition-tab" data-bs-toggle="tab" data-bs-target="#competition" type="button" role="tab">
+                    <i class="fas fa-chart-line me-2"></i>Competition
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="menu-tab" data-bs-toggle="tab" data-bs-target="#menu" type="button" role="tab">
+                    <i class="fas fa-utensils me-2"></i>Menu Planning
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content mt-3" id="vendorManagementTabContent">
+            <!-- Vendor Relationships Tab -->
+            <div class="tab-pane fade show active" id="relationships" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-handshake me-2"></i>Vendor Relationships
+                        </h6>
+                        <div id="vendorRelationshipsContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality Analysis Tab -->
+            <div class="tab-pane fade" id="quality" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-success mb-3">
+                            <i class="fas fa-star me-2"></i>Vendor Quality Analysis
+                        </h6>
+                        <div id="vendorQualityContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-success" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Placement Optimization Tab -->
+            <div class="tab-pane fade" id="placement" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-warning mb-3">
+                            <i class="fas fa-map-marker-alt me-2"></i>Placement Optimization
+                        </h6>
+                        <div id="vendorPlacementContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-warning" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Specialties Analysis Tab -->
+            <div class="tab-pane fade" id="specialties" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-info mb-3">
+                            <i class="fas fa-tags me-2"></i>Vendor Specialties Analysis
+                        </h6>
+                        <div id="vendorSpecialtiesContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-info" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Competition Analysis Tab -->
+            <div class="tab-pane fade" id="competition" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-danger mb-3">
+                            <i class="fas fa-chart-line me-2"></i>Competition Analysis
+                        </h6>
+                        <div id="vendorCompetitionContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-danger" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu Planning Tab -->
+            <div class="tab-pane fade" id="menu" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-secondary mb-3">
+                            <i class="fas fa-utensils me-2"></i>Menu Planning & Food Strategy
+                        </h6>
+                        <div id="vendorMenuContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-secondary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const festivalId = {{ festival_id }};
+    
+    // Load vendor management data when tabs are clicked
+    document.querySelectorAll('#vendorManagementTabs button').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-bs-target').substring(1);
+            loadVendorManagementData(targetId, festivalId);
+        });
+    });
+    
+    // Load initial data for relationships tab
+    loadVendorManagementData('relationships', festivalId);
+});
+
+function loadVendorManagementData(tabId, festivalId) {
+    const contentId = `vendor${tabId.charAt(0).toUpperCase() + tabId.slice(1)}Content`;
+    const contentElement = document.getElementById(contentId);
+    
+    if (!contentElement) return;
+    
+    // Show loading spinner
+    contentElement.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
+    // Load data based on tab
+    let endpoint = '';
+    switch(tabId) {
+        case 'relationships':
+            endpoint = `/api/vendors/relationships/${festivalId}`;
+            break;
+        case 'quality':
+            endpoint = `/api/vendors/quality_analysis/${festivalId}`;
+            break;
+        case 'placement':
+            endpoint = `/api/vendors/placement_optimization/${festivalId}`;
+            break;
+        case 'specialties':
+            endpoint = `/api/vendors/specialties/${festivalId}`;
+            break;
+        case 'competition':
+            endpoint = `/api/vendors/competition_analysis/${festivalId}`;
+            break;
+        case 'menu':
+            endpoint = `/api/vendors/menu_planning/${festivalId}`;
+            break;
+    }
+    
+    if (endpoint) {
+        fetch(endpoint)
+            .then(response => response.json())
+            .then(data => {
+                renderVendorManagementData(tabId, data, contentElement);
+            })
+            .catch(error => {
+                console.error('Error loading vendor management data:', error);
+                contentElement.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error loading data. Please try again.
+                    </div>
+                `;
+            });
+    }
+}
+
+function renderVendorManagementData(tabId, data, contentElement) {
+    switch(tabId) {
+        case 'relationships':
+            renderVendorRelationships(data, contentElement);
+            break;
+        case 'quality':
+            renderVendorQuality(data, contentElement);
+            break;
+        case 'placement':
+            renderVendorPlacement(data, contentElement);
+            break;
+        case 'specialties':
+            renderVendorSpecialties(data, contentElement);
+            break;
+        case 'competition':
+            renderVendorCompetition(data, contentElement);
+            break;
+        case 'menu':
+            renderVendorMenu(data, contentElement);
+            break;
+    }
+}
+
+function renderVendorRelationships(data, contentElement) {
+    if (!data || data.length === 0) {
+        contentElement.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No vendor relationships found. Hire more vendors to see relationships.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row">';
+    data.forEach(relationship => {
+        const effectClass = relationship.type === 'competitive' ? 'danger' : 
+                           relationship.type === 'complementary' ? 'success' : 
+                           relationship.type === 'synergistic' ? 'primary' : 'secondary';
+        
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card border-${effectClass}">
+                    <div class="card-header bg-${effectClass} text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-${relationship.type === 'competitive' ? 'times' : 'check'}-circle me-2"></i>
+                            ${relationship.type.charAt(0).toUpperCase() + relationship.type.slice(1)} Relationship
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2"><strong>${relationship.vendor1}</strong> ↔ <strong>${relationship.vendor2}</strong></p>
+                        <p class="mb-2">${relationship.effect}</p>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Revenue Effect</small>
+                                <div class="fw-bold ${relationship.revenue_effect >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${relationship.revenue_effect >= 0 ? '+' : ''}${(relationship.revenue_effect * 100).toFixed(1)}%
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Satisfaction Effect</small>
+                                <div class="fw-bold ${relationship.satisfaction_effect >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${relationship.satisfaction_effect >= 0 ? '+' : ''}${(relationship.satisfaction_effect * 100).toFixed(1)}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    contentElement.innerHTML = html;
+}
+
+function renderVendorQuality(data, contentElement) {
+    if (!data || data.length === 0) {
+        contentElement.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No vendors found. Hire vendors to see quality analysis.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="table-responsive"><table class="table table-striped">';
+    html += `
+        <thead>
+            <tr>
+                <th>Vendor</th>
+                <th>Specialty</th>
+                <th>Base Quality</th>
+                <th>Advanced Score</th>
+                <th>Satisfaction</th>
+                <th>Specialties</th>
+                <th>Allergy Support</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    data.forEach(vendor => {
+        const qualityClass = vendor.advanced_quality_score >= 80 ? 'success' : 
+                           vendor.advanced_quality_score >= 60 ? 'warning' : 'danger';
+        const satisfactionClass = vendor.customer_satisfaction >= 80 ? 'success' : 
+                                 vendor.customer_satisfaction >= 60 ? 'warning' : 'danger';
+        
+        html += `
+            <tr>
+                <td><strong>${vendor.vendor_name}</strong></td>
+                <td>${vendor.specialty}</td>
+                <td>${vendor.base_quality}/100</td>
+                <td><span class="badge bg-${qualityClass}">${vendor.advanced_quality_score.toFixed(1)}/100</span></td>
+                <td><span class="badge bg-${satisfactionClass}">${vendor.customer_satisfaction.toFixed(1)}/100</span></td>
+                <td>${vendor.specialties.map(s => `<span class="badge bg-info me-1">${s}</span>`).join('')}</td>
+                <td>${vendor.allergy_support.level ? `<span class="badge bg-warning">${vendor.allergy_support.level}</span>` : 'None'}</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    contentElement.innerHTML = html;
+}
+
+function renderVendorPlacement(data, contentElement) {
+    if (!data || data.length === 0) {
+        contentElement.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No vendors found. Hire vendors to see placement analysis.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row">';
+    data.forEach(vendor => {
+        const placementClass = vendor.placement_suitable ? 'success' : 'warning';
+        const competitionClass = vendor.competition_penalty < -0.1 ? 'danger' : 
+                                vendor.competition_penalty < -0.05 ? 'warning' : 'success';
+        
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">${vendor.vendor_name}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Current Placement</small>
+                                <div class="fw-bold">${vendor.current_placement}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Optimal Placement</small>
+                                <div class="fw-bold">${vendor.optimal_placement}</div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <small class="text-muted">Placement Suitable</small>
+                                <div><span class="badge bg-${placementClass}">${vendor.placement_suitable ? 'Yes' : 'No'}</span></div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Competition Penalty</small>
+                                <div class="fw-bold text-${competitionClass}">${(vendor.competition_penalty * 100).toFixed(1)}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    contentElement.innerHTML = html;
+}
+
+function renderVendorSpecialties(data, contentElement) {
+    if (!data) {
+        contentElement.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No vendor specialties data found.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row">';
+    
+    // Specialty Coverage
+    html += `
+        <div class="col-md-6 mb-4">
+            <h6 class="text-primary mb-3">Specialty Coverage</h6>
+            <div class="card">
+                <div class="card-body">
+    `;
+    
+    if (data.specialty_coverage && Object.keys(data.specialty_coverage).length > 0) {
+        Object.entries(data.specialty_coverage).forEach(([specialty, count]) => {
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>${specialty.replace('_', ' ').toUpperCase()}</span>
+                    <span class="badge bg-primary">${count}</span>
+                </div>
+            `;
+        });
+    } else {
+        html += '<p class="text-muted">No specialties found</p>';
+    }
+    
+    html += '</div></div></div>';
+    
+    // Recommendations
+    html += `
+        <div class="col-md-6 mb-4">
+            <h6 class="text-warning mb-3">Recommendations</h6>
+            <div class="card">
+                <div class="card-body">
+    `;
+    
+    if (data.recommendations && data.recommendations.length > 0) {
+        data.recommendations.forEach(rec => {
+            html += `
+                <div class="alert alert-warning mb-2">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    ${rec.message}
+                </div>
+            `;
+        });
+    } else {
+        html += '<p class="text-muted">No recommendations at this time</p>';
+    }
+    
+    html += '</div></div></div></div>';
+    contentElement.innerHTML = html;
+}
+
+function renderVendorCompetition(data, contentElement) {
+    if (!data) {
+        contentElement.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No competition data found.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row">';
+    
+    // Overall Competition
+    const competitionClass = data.overall_competition > 2 ? 'danger' : 
+                            data.overall_competition > 1 ? 'warning' : 'success';
+    
+    html += `
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h4 class="text-${competitionClass}">${data.overall_competition.toFixed(1)}</h4>
+                    <p class="text-muted mb-0">Overall Competition Score</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Placement Competition
+    html += `
+        <div class="col-md-8 mb-4">
+            <h6 class="text-primary mb-3">Placement Competition</h6>
+            <div class="card">
+                <div class="card-body">
+    `;
+    
+    if (data.placement_competition && Object.keys(data.placement_competition).length > 0) {
+        Object.entries(data.placement_competition).forEach(([placement, count]) => {
+            const countClass = count > 3 ? 'danger' : count > 2 ? 'warning' : 'success';
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>${placement}</span>
+                    <span class="badge bg-${countClass}">${count} vendors</span>
+                </div>
+            `;
+        });
+    } else {
+        html += '<p class="text-muted">No placement data</p>';
+    }
+    
+    html += '</div></div></div></div>';
+    
+    // Recommendations
+    if (data.recommendations && data.recommendations.length > 0) {
+        html += '<div class="row"><div class="col-12">';
+        html += '<h6 class="text-warning mb-3">Competition Recommendations</h6>';
+        data.recommendations.forEach(rec => {
+            html += `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    ${rec.message}
+                </div>
+            `;
+        });
+        html += '</div></div>';
+    }
+    
+    contentElement.innerHTML = html;
+}
+
+function renderVendorMenu(data, contentElement) {
+    if (!data) {
+        contentElement.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No menu data found.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row">';
+    
+    // Menu Coverage
+    html += `
+        <div class="col-md-4 mb-4">
+            <h6 class="text-primary mb-3">Menu Coverage</h6>
+            <div class="card">
+                <div class="card-body">
+    `;
+    
+    if (data.menu_coverage && Object.keys(data.menu_coverage).length > 0) {
+        Object.entries(data.menu_coverage).forEach(([category, count]) => {
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>${category}</span>
+                    <span class="badge bg-primary">${count} items</span>
+                </div>
+            `;
+        });
+    } else {
+        html += '<p class="text-muted">No menu items found</p>';
+    }
+    
+    html += '</div></div></div>';
+    
+    // Allergen Coverage
+    html += `
+        <div class="col-md-4 mb-4">
+            <h6 class="text-warning mb-3">Allergen Coverage</h6>
+            <div class="card">
+                <div class="card-body">
+    `;
+    
+    if (data.allergen_coverage && Object.keys(data.allergen_coverage).length > 0) {
+        Object.entries(data.allergen_coverage).forEach(([allergen, count]) => {
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>${allergen}</span>
+                    <span class="badge bg-warning">${count} items</span>
+                </div>
+            `;
+        });
+    } else {
+        html += '<p class="text-muted">No allergen data</p>';
+    }
+    
+    html += '</div></div></div>';
+    
+    // Price Ranges
+    html += `
+        <div class="col-md-4 mb-4">
+            <h6 class="text-success mb-3">Price Ranges</h6>
+            <div class="card">
+                <div class="card-body">
+    `;
+    
+    if (data.price_ranges && Object.keys(data.price_ranges).length > 0) {
+        Object.entries(data.price_ranges).forEach(([category, priceData]) => {
+            html += `
+                <div class="mb-2">
+                    <div class="fw-bold">${category}</div>
+                    <small class="text-muted">$${priceData.min} - $${priceData.max} (avg: $${priceData.avg.toFixed(1)})</small>
+                </div>
+            `;
+        });
+    } else {
+        html += '<p class="text-muted">No price data</p>';
+    }
+    
+    html += '</div></div></div></div>';
+    
+    // Recommendations
+    if (data.recommendations && data.recommendations.length > 0) {
+        html += '<div class="row"><div class="col-12">';
+        html += '<h6 class="text-info mb-3">Menu Recommendations</h6>';
+        data.recommendations.forEach(rec => {
+            html += `
+                <div class="alert alert-info">
+                    <i class="fas fa-utensils me-2"></i>
+                    ${rec.message}
+                </div>
+            `;
+        });
+        html += '</div></div>';
+    }
+    
+    contentElement.innerHTML = html;
+}
+</script>
+{% endmacro %} 
